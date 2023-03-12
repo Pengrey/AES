@@ -1,0 +1,11 @@
+# .gitignore
+# Ignore .vscode folder
+.vscode/
+
+# Ignore the Card_Gen artifacts
+Card_Gen/card.txt
+Card_Gen/generator
+
+# Ignore the Card_Prs artifacts
+Card_Prs/card.txt
+Card_Prs/parser
