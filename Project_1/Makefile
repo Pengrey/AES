@@ -93,7 +93,7 @@ else
         App_C_Flags += -DNDEBUG -UEDEBUG -UDEBUG
 endif
 
-App_Cpp_Flags := $(App_C_Flags) -std=c++11
+App_Cpp_Flags := $(App_C_Flags) -std=c++14
 App_Link_Flags := $(SGX_COMMON_CFLAGS) -L$(SGX_LIBRARY_PATH) -l$(Urts_Library_Name) -lpthread 
 
 ifneq ($(SGX_MODE), HW)
@@ -130,7 +130,7 @@ Enclave1_Cpp_Files := BankEnclave/BankEnclave.cpp
 Enclave1_Include_Paths := -IInclude -IEnclave1 -I$(SGX_SDK)/include -I$(SGX_SDK)/include/tlibc -I$(SGX_SDK)/include/libcxx
 
 Enclave1_C_Flags = $(Enclave_C_Flags) $(Enclave1_Include_Paths)
-Enclave1_Cpp_Flags := $(Enclave1_C_Flags) -std=c++11 -nostdinc++
+Enclave1_Cpp_Flags := $(Enclave1_C_Flags) -std=c++14 -nostdinc++
 
 # To generate a proper enclave, it is recommended to follow below guideline to link the trusted libraries:
 #    1. Link sgx_trts with the `--whole-archive' and `--no-whole-archive' options,
