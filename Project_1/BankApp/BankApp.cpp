@@ -35,6 +35,7 @@
 #include <string.h>
 #include <assert.h>
 
+
 #include "sgx_urts.h"
 #include "BankApp.h"
 #include "BankEnclave_u.h"
@@ -157,7 +158,7 @@ int initialize_bankenclave(void)
 {
   sgx_status_t ret;
     
-  if((ret = sgx_create_enclave(ENCLAVE1_FILENAME,SGX_DEBUG_FLAG,NULL,NULL,&global_eid1,NULL)) != SGX_SUCCESS)
+  if((ret = sgx_create_enclave(BANKENCLAVE_FILENAME,SGX_DEBUG_FLAG,NULL,NULL,&global_eid1,NULL)) != SGX_SUCCESS)
   {
     print_error_message(ret,"sgx_create_enclave");
     return -1;
@@ -207,40 +208,10 @@ int SGX_CDECL main(int argc,char *argv[])
   /* initialize the enclave and print welcome message */
   if(initialize_bankenclave() < 0)
     return 1; 
-  if((ret = e1_printf_hello_world(global_eid1)) != SGX_SUCCESS)
-  {
-    print_error_message(ret,"e1_printf_hello_world");
-    return 1;
-  }
-  /* measure execution time in the untrusted domain */ 
-  for(int e = 0;e < 10;e++)
-  {
-    delta_t[e] = rdtsc();
-    sum = 0;
-    for(int i = 0;i < n;i++)
-      sum += a[i];
-    delta_t[e] = rdtsc() - delta_t[e];
-  }
-  printf("App: n=%d sum=%d t=[%lu",n,sum,delta_t[0]);
-  for(int e = 1;e < 10;e++)
-    printf(",%lu",delta_t[e]);
-  printf("]\n");
-  /* measure execution time in the trusted domain */ 
-  for(int e = 0;e < 10;e++)
-  {
-    delta_t[e] = rdtsc();
-    ret = e1_sum_array(global_eid1,&a[0],n,&sum);
-    delta_t[e] = rdtsc() - delta_t[e];
-    if(ret != SGX_SUCCESS)
-    {
-      print_error_message(ret,"e1_sum_array");
-      return 1;
-    }
-  }
-  printf("BankEnclave: n=%d sum=%d t=[%lu",n,sum,delta_t[0]);
-  for(int e = 1;e < 10;e++)
-    printf(",%lu",delta_t[e]);
-  printf("]\n");
+
+  // our code goes here
+
+
   /* destroy the enclave */
   if((ret = sgx_destroy_enclave(global_eid1)) != SGX_SUCCESS)
   {
@@ -248,4 +219,102 @@ int SGX_CDECL main(int argc,char *argv[])
     return 1;
   }
   return 0;
+}
+
+
+int[][] parse_card(){
+    // From parser.cpp
+
+    string path = "card.txt";                                                           // The default path is "card.txt"
+
+    ifstream fin(path.c_str());                                                        // The file is opened in read mode
+
+    if (!fin)                                                                          // If the file does not exist, print an error message and exit
+    {
+        cout << "Error: File does not exist" << endl;
+        return 0;
+    }
+
+    int n = 0, m = 0;                                                                  // The number of rows and columns
+
+    string line;
+    while (getline(fin, line))                                                         // Get the number of rows
+        n++;
+
+    fin.clear();
+    fin.seekg(0, ios::beg);
+    getline(fin, line);
+
+    for (int i = 0; i < line.length(); i++)                                             // Get the number of columns
+        if (line[i] == ' ')
+            m++;
+
+    int **arr = new int*[n];                                                            // Create the 2D array dynamically
+    for (int i = 0; i < n; i++)
+        arr[i] = new int[m];
+
+
+    fin.clear();
+
+    fin.seekg(0, ios::beg);
+    for (int i = 0; i < n; i++)                                                        // Read the numbers from the file and store them in the array
+        for (int j = 0; j < m; j++)
+            fin >> arr[i][j];
+
+    fin.close();
+
+    return arr;
+}
+
+
+int[][] gen_card(){
+    generate_card(1,["bankapp.cpp"]);
+    return parse_card();
+
+}
+
+int init_card(){
+    int[][] card = gen_card();
+
+    // print 2d array in c++
+    int n = sizeof(card) / sizeof(card[0]);
+    int m = sizeof(card[0]) / sizeof(card[0][0]);
+    
+    for (int i = 0; i < n; i++) { 
+        for (int j = 0; j < m; j++) 
+            printf("%d ", card[i][j]); 
+        printf("\n"); 
+    }
+    
+}
+
+int do_validation(){
+    int x,y;
+    printf("Enter Coordinate #1: ");
+    scanf("%d",&x);
+    printf("Enter Coordinate #2: ");
+    scanf("%d",&y);
+
+    // enclave stuff to validate card?
+
+}
+
+
+int show_menu(){
+  int choice;
+  printf("1. Create Card (Init)\n");
+  printf("2. Validate Auth\n");
+  printf("Enter your choice: ");
+  scanf("%d",&choice);
+
+  switch (choice)
+  {
+  case 1:
+    init_card();
+    break;
+  case 2:
+    do_validation();
+    break;
+  }
+
 }
