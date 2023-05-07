@@ -126,11 +126,11 @@ endif
 
 ######## BankEnclave Settings ########
 
-Enclave1_Cpp_Files := BankEnclave/BankEnclave.cpp
-Enclave1_Include_Paths := -IInclude -IEnclave1 -I$(SGX_SDK)/include -I$(SGX_SDK)/include/tlibc -I$(SGX_SDK)/include/libcxx
+BankEnclave_Cpp_Files := BankEnclave/BankEnclave.cpp
+BankEnclave_Include_Paths := -IInclude -IBankEnclave -I$(SGX_SDK)/include -I$(SGX_SDK)/include/tlibc -I$(SGX_SDK)/include/libcxx
 
-Enclave1_C_Flags = $(Enclave_C_Flags) $(Enclave1_Include_Paths)
-Enclave1_Cpp_Flags := $(Enclave1_C_Flags) -std=c++14 -nostdinc++
+BankEnclave_C_Flags = $(Enclave_C_Flags) $(BankEnclave_Include_Paths)
+BankEnclave_Cpp_Flags := $(BankEnclave_C_Flags) -std=c++14 -nostdinc++
 
 # To generate a proper enclave, it is recommended to follow below guideline to link the trusted libraries:
 #    1. Link sgx_trts with the `--whole-archive' and `--no-whole-archive' options,
@@ -139,7 +139,7 @@ Enclave1_Cpp_Flags := $(Enclave1_C_Flags) -std=c++14 -nostdinc++
 #       Use `--start-group' and `--end-group' to link these libraries.
 # Do NOT move the libraries linked with `--start-group' and `--end-group' within `--whole-archive' and `--no-whole-archive' options.
 # Otherwise, you may get some undesirable errors.
-Enclave1_Link_Flags := $(SGX_COMMON_CFLAGS) -Wl,--no-undefined -nostdlib -nodefaultlibs -nostartfiles -L$(SGX_LIBRARY_PATH) \
+BankEnclave_Link_Flags := $(SGX_COMMON_CFLAGS) -Wl,--no-undefined -nostdlib -nodefaultlibs -nostartfiles -L$(SGX_LIBRARY_PATH) \
 	-Wl,--whole-archive -l$(Trts_Library_Name) -Wl,--no-whole-archive \
 	-Wl,--start-group -lsgx_tstdc -lsgx_tcxx -l$(Crypto_Library_Name) -l$(Service_Library_Name) -Wl,--end-group \
 	-Wl,-Bstatic -Wl,-Bsymbolic -Wl,--no-undefined \
@@ -147,11 +147,11 @@ Enclave1_Link_Flags := $(SGX_COMMON_CFLAGS) -Wl,--no-undefined -nostdlib -nodefa
 	-Wl,--defsym,__ImageBase=0 -Wl,--gc-sections   \
 	-Wl,--version-script=BankEnclave/BankEnclave.lds
 
-Enclave1_Cpp_Objects := $(Enclave1_Cpp_Files:.cpp=.o)
+BankEnclave_Cpp_Objects := $(BankEnclave_Cpp_Files:.cpp=.o)
 
-Enclave1_Name := enclave1.so
-Signed_Enclave1_Name := enclave1.signed.so
-Enclave1_Config_File := BankEnclave/BankEnclave.config.xml
+BankEnclave_Name := BankEnclave.so
+Signed_BankEnclave_Name := BankEnclave.signed.so
+BankEnclave_Config_File := BankEnclave/BankEnclave.config.xml
 
 ## Build mode
 
@@ -177,15 +177,15 @@ endif
 .PHONY: all run
 
 ifeq ($(Build_Mode), HW_RELEASE)
-all: .config_$(Build_Mode)_$(SGX_ARCH) $(App_Name) $(Enclave1_Name)
+all: .config_$(Build_Mode)_$(SGX_ARCH) $(App_Name) $(BankEnclave_Name)
 	@echo "The project has been built in release hardware mode."
-	@echo "Please sign the $(Enclave1_Name) first with your signing key before you run the $(App_Name) to launch and access the enclave."
+	@echo "Please sign the $(BankEnclave_Name) first with your signing key before you run the $(App_Name) to launch and access the enclave."
 	@echo "To sign the enclave use the command:"
-	@echo "   $(SGX_ENCLAVE_SIGNER) sign -key <your key> -enclave $(Enclave1_Name) -out <$(Signed_Enclave1_Name)> -config $(Enclave1_Config_File)"
+	@echo "   $(SGX_ENCLAVE_SIGNER) sign -key <your key> -enclave $(BankEnclave_Name) -out <$(Signed_BankEnclave_Name)> -config $(BankEnclave_Config_File)"
 	@echo "You can also sign the enclave using an external signing tool."
 	@echo "To build the project in simulation mode set SGX_MODE=SIM. To build the project in prerelease mode set SGX_PRERELEASE=1 and SGX_MODE=HW."
 else
-all: .config_$(Build_Mode)_$(SGX_ARCH) $(App_Name) $(Signed_Enclave1_Name)
+all: .config_$(Build_Mode)_$(SGX_ARCH) $(App_Name) $(Signed_BankEnclave_Name)
 ifeq ($(Build_Mode), HW_DEBUG)
 	@echo "The project has been built in debug hardware mode."
 else ifeq ($(Build_Mode), SIM_DEBUG)
@@ -208,7 +208,7 @@ endif
 ######## App Objects ########
 
 BankApp/BankEnclave_u.c: $(SGX_EDGER8R) BankEnclave/BankEnclave.edl
-	@cd BankApp && $(SGX_EDGER8R) --untrusted ../BankEnclave/BankEnclave.edl --search-path ../Enclave1 --search-path $(SGX_SDK)/include
+	@cd BankApp && $(SGX_EDGER8R) --untrusted ../BankEnclave/BankEnclave.edl --search-path ../BankEnclave --search-path $(SGX_SDK)/include
 	@echo "GEN  =>  $@"
 
 BankApp/BankEnclave_u.o: BankApp/BankEnclave_u.c
@@ -224,32 +224,32 @@ $(App_Name): BankApp/BankEnclave_u.o $(App_Cpp_Objects)
 	@echo "LINK =>  $@"
 
 .config_$(Build_Mode)_$(SGX_ARCH):
-	@rm -f .config_* $(App_Name) $(Enclave1_Name) $(Signed_Enclave1_Name) $(App_Cpp_Objects) App/Enclave1_u.* $(Enclave1_Cpp_Objects) BankEnclave/BankEnclave_t.*
+	@rm -f .config_* $(App_Name) $(BankEnclave_Name) $(Signed_BankEnclave_Name) $(App_Cpp_Objects) BankApp/BankEnclave_u.* $(BankEnclave_Cpp_Objects) BankEnclave/BankEnclave_t.*
 	@touch .config_$(Build_Mode)_$(SGX_ARCH)
 
-######## Enclave1 Objects ########
+######## BankEnclave Objects ########
 
 BankEnclave/BankEnclave_t.c: $(SGX_EDGER8R) BankEnclave/BankEnclave.edl
-	@cd Enclave1 && $(SGX_EDGER8R) --trusted ../BankEnclave/BankEnclave.edl --search-path ../Enclave1 --search-path $(SGX_SDK)/include
+	@cd BankEnclave && $(SGX_EDGER8R) --trusted ../BankEnclave/BankEnclave.edl --search-path ../BankEnclave --search-path $(SGX_SDK)/include
 	@echo "GEN  =>  $@"
 
 BankEnclave/BankEnclave_t.o: BankEnclave/BankEnclave_t.c
-	@$(CC) $(Enclave1_C_Flags) -c $< -o $@
+	@$(CC) $(BankEnclave_C_Flags) -c $< -o $@
 	@echo "CC   <=  $<"
 
 BankEnclave/%.o: BankEnclave/%.cpp
-	@$(CXX) $(Enclave1_Cpp_Flags) -c $< -o $@
+	@$(CXX) $(BankEnclave_Cpp_Flags) -c $< -o $@
 	@echo "CXX  <=  $<"
 
-$(Enclave1_Name): BankEnclave/BankEnclave_t.o $(Enclave1_Cpp_Objects)
-	@$(CXX) $^ -o $@ $(Enclave1_Link_Flags)
+$(BankEnclave_Name): BankEnclave/BankEnclave_t.o $(BankEnclave_Cpp_Objects)
+	@$(CXX) $^ -o $@ $(BankEnclave_Link_Flags)
 	@echo "LINK =>  $@"
 
-$(Signed_Enclave1_Name): $(Enclave1_Name) $(Enclave1_Config_File)
-	@$(SGX_ENCLAVE_SIGNER) sign -key BankEnclave/BankEnclave_private_key.pem -enclave $(Enclave1_Name) -out $@ -config $(Enclave1_Config_File)
+$(Signed_BankEnclave_Name): $(BankEnclave_Name) $(BankEnclave_Config_File)
+	@$(SGX_ENCLAVE_SIGNER) sign -key BankEnclave/BankEnclave_private_key.pem -enclave $(BankEnclave_Name) -out $@ -config $(BankEnclave_Config_File)
 	@echo "SIGN =>  $@"
 
 .PHONY: clean
 
 clean:
-	@rm -f .config_* $(App_Name) $(Enclave1_Name) $(Signed_Enclave1_Name) $(App_Cpp_Objects) App/Enclave1_u.* $(Enclave1_Cpp_Objects) BankEnclave/BankEnclave_t.* a.out
+	@rm -f .config_* $(App_Name) $(BankEnclave_Name) $(Signed_BankEnclave_Name) $(App_Cpp_Objects) BankApp/BankEnclave_u.* $(BankEnclave_Cpp_Objects) BankEnclave/BankEnclave_t.* a.out
