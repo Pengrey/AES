@@ -34,7 +34,7 @@
 #include <stdio.h>      /* vsnprintf */
 
 #include "BankEnclave.h"
-#include "BankEnclave.h"  /* e1_print_string */
+#include "BankEnclave_t.h"  /* e1_print_string */
 
 /* 
  * printf: 
@@ -52,17 +52,6 @@ int printf(const char *fmt, ...)
   return 0;
 }
 
-int printf(const char *fmt, ...)
-{
-  char buf[BUFSIZ] = { '\0' };
-  va_list ap;
-
-  va_start(ap,fmt);
-  (void)vsnprintf(buf,BUFSIZ,fmt, ap);
-  va_end(ap);
-  ocall_e1_print_string(buf);
-  return 0;
-}
 
 
 

@@ -34,7 +34,12 @@
 #include <stdio.h>
 #include <string.h>
 #include <assert.h>
+#include <iostream>
+#include <fstream>
+#include <cstdlib>
+#include <ctime>
 
+using namespace std;
 
 #include "sgx_urts.h"
 #include "BankApp.h"
@@ -221,74 +226,106 @@ int SGX_CDECL main(int argc,char *argv[])
   return 0;
 }
 
+int generate_card(int n, int m)            // The program generates an array of nxm random numbers
+{
+    n = 8;
+    m = 8;                       // The default values are n=8 and m=8
+ 
+    
+    ofstream fout("card.txt");              // The numbers are stored in a file named "card.txt"
+    srand(time(NULL));
 
-int[][] parse_card(){
-    // From parser.cpp
-
-    string path = "card.txt";                                                           // The default path is "card.txt"
-
-    ifstream fin(path.c_str());                                                        // The file is opened in read mode
-
-    if (!fin)                                                                          // If the file does not exist, print an error message and exit
-    {
-        cout << "Error: File does not exist" << endl;
-        return 0;
-    }
-
-    int n = 0, m = 0;                                                                  // The number of rows and columns
-
-    string line;
-    while (getline(fin, line))                                                         // Get the number of rows
-        n++;
-
-    fin.clear();
-    fin.seekg(0, ios::beg);
-    getline(fin, line);
-
-    for (int i = 0; i < line.length(); i++)                                             // Get the number of columns
-        if (line[i] == ' ')
-            m++;
-
-    int **arr = new int*[n];                                                            // Create the 2D array dynamically
-    for (int i = 0; i < n; i++)
-        arr[i] = new int[m];
-
-
-    fin.clear();
-
-    fin.seekg(0, ios::beg);
-    for (int i = 0; i < n; i++)                                                        // Read the numbers from the file and store them in the array
+    for (int i = 0; i < n; i++)             // The program also prints the numbers on the screen
+    {   
         for (int j = 0; j < m; j++)
-            fin >> arr[i][j];
+        {
+            int num = rand() % 999 + 1;     // The range of the numbers are from the range 001 to 999
 
-    fin.close();
+            if (num < 100)                  // The number is padded with zeros to make it 3 digits
+                fout << "0";
+            if (num < 10) 
+                fout << "0";
 
-    return arr;
-}
+            fout << num << " ";             // The numbers are separated by a space
+        }
 
-
-int[][] gen_card(){
-    generate_card(1,["bankapp.cpp"]);
-    return parse_card();
-
-}
-
-int init_card(){
-    int[][] card = gen_card();
-
-    // print 2d array in c++
-    int n = sizeof(card) / sizeof(card[0]);
-    int m = sizeof(card[0]) / sizeof(card[0][0]);
-    
-    for (int i = 0; i < n; i++) { 
-        for (int j = 0; j < m; j++) 
-            printf("%d ", card[i][j]); 
-        printf("\n"); 
+        fout << endl;                       // The numbers are separated by a new line
     }
+    fout.close();
+    return 0;
+}
+
+
+
+int** parse_card(){
+  // From parser.cpp
+  string path = "card.txt";                                                           // The default path is "card.txt"
+
+  ifstream fin(path.c_str());                                                        // The file is opened in read mode
+
+  if (!fin)                                                                          // If the file does not exist, print an error message and exit
+  {
+    cout << "Error: File does not exist" << endl;
+    return 0;
+  }
+
+  int n = 1, m = 1;                                                                  // The number of rows and columns
+
+  string line;
+  while (getline(fin, line))                                                         // Get the number of rows
+    n++;
+
+  fin.clear();
+  fin.seekg(0, ios::beg);
+  getline(fin, line);
+
+  for (int i = 0; i < line.length(); i++)                                             // Get the number of columns
+    if (line[i] == ' ')
+      m++;
+
+  int **arr = new int*[n];                                                            // Create the 2D array dynamically
+  for (int i = 0; i < n; i++)
+    arr[i] = new int[m];
+
+
+  fin.clear();
+
+  fin.seekg(0, ios::beg);
+  for (int i = 0; i < n; i++)                                                        // Read the numbers from the file and store them in the array
+      for (int j = 0; j < m; j++)
+        fin >> arr[i][j];
+
+  fin.close();
+
+  return arr;
+}
+
+
+int** gen_card(){
+  generate_card(5,5);
+  return parse_card();
+
+}
+
+void init_card(){
+  int** card = gen_card();
+
+  // print 2d array in c++
+  int n = sizeof(card) / sizeof(card[0]);
+  int m = sizeof(card[0]) / sizeof(card[0][0]);
+    
+  for (int i = 0; i < n; i++) { 
+    for (int j = 0; j < m; j++) 
+        printf("%d ", card[i][j]); 
+    printf("\n"); 
+  }
+
+  
     
 }
 
-int do_validation(){
+//TODO
+void do_validation(){
     int x,y;
     printf("Enter Coordinate #1: ");
     scanf("%d",&x);
@@ -300,7 +337,7 @@ int do_validation(){
 }
 
 
-int show_menu(){
+void show_menu(){
   int choice;
   printf("1. Create Card (Init)\n");
   printf("2. Validate Auth\n");

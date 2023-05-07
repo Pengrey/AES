@@ -37,10 +37,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
+#include <vector>
+
 
 // these two are broken and i don't know why
-//#include "sgx_error.h"       /* sgx_status_t */
-//#include "sgx_eid.h"     /* sgx_enclave_id_t */
+#include "sgx_error.h"       /* sgx_status_t */
+#include "sgx_eid.h"     /* sgx_enclave_id_t */
 
 #define BANKENCLAVE_FILENAME "bankenclave.signed.so"
 
