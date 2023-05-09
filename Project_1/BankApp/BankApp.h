@@ -44,7 +44,7 @@
 #include "sgx_error.h"       /* sgx_status_t */
 #include "sgx_eid.h"     /* sgx_enclave_id_t */
 
-#define BANKENCLAVE_FILENAME "bankenclave.signed.so"
+#define BANKENCLAVE_FILENAME "BankEnclave.signed.so"
 
 #if defined(__cplusplus)
 extern "C" {
