@@ -44,7 +44,7 @@ int printf(const char *fmt, ...)
 {
   char buf[BUFSIZ] = { '\0' };
   va_list ap;
-
+  
   va_start(ap,fmt);
   (void)vsnprintf(buf,BUFSIZ,fmt, ap);
   va_end(ap);
@@ -77,6 +77,19 @@ void e1_sum_array(int *ptr,size_t n,int *sum)
   *sum = s;
 }
 
+/*
+ * ECALL (DEBUG print the elements of the array)
+ */
+void debug_print_card(int **card, size_t n)
+{
+  printf("Card: ");
+  printf("%d\n",n);
+  for(int i = 0;i < n;i++){
+    for (int j = 0; j < n; j++)
+      printf("%d ",card[i][j]);
+    printf("\n");
+  } 
+}
 
 /*
  * ECALL (get plaintext card)
@@ -87,9 +100,9 @@ void be_init_card(int **card, size_t n)
 // encrypted_card[0] will be client id
 // everything else is the card itself
   ocall_e1_print_string("TESTE\n");
+  debug_print_card(card, n);
 
-
-
+  return;
 
 
 

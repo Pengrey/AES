@@ -46,6 +46,7 @@ using namespace std;
 #include "BankEnclave_u.h"
 
 
+#define SIZE_CARD 8
 /*
  * Error reporting
  */
@@ -181,10 +182,10 @@ void ocall_e1_print_string(const char *str)
 /*
  * BankApp Aux Functions
  */ 
-int generate_card(int n, int m)            // The program generates an array of nxm random numbers
+int generate_card()            // The program generates an array of nxm random numbers
 {
-    n = 8;
-    m = 8;                       // The default values are n=8 and m=8
+    int n = SIZE_CARD;
+    int m = SIZE_CARD;                       // The default values are n=8 and m=8
  
     
     ofstream fout("card.txt");              // The numbers are stored in a file named "card.txt"
@@ -259,7 +260,7 @@ int** parse_card(){
 
 
 int** gen_card(){
-  generate_card(5,5);
+  generate_card();
   return parse_card();
 }
 
@@ -272,17 +273,17 @@ int** init_card(int client_id){
 
   // append array to card
 
-  int ** new_card = (int **) malloc(sizeof(int *) * 6);
+  int ** new_card = (int **) malloc(sizeof(int *) * SIZE_CARD);
   new_card[0] = arr;
 
-  for(int i = 1;i < 6;i++){
+  for(int i = 1;i < SIZE_CARD;i++){
     new_card[i] = card[i-1];
   }
   
   // print new card contents
 
-  for(int i = 0;i < 6;i++){
-    for(int j = 0;j < 6;j++){
+  for(int i = 0;i < SIZE_CARD;i++){
+    for(int j = 0;j < SIZE_CARD;j++){
       printf("%d ",new_card[i][j]);
     }
     printf("\n");
@@ -348,8 +349,16 @@ int SGX_CDECL main(int argc,char *argv[])
 
     card = init_card(client_id);
 
+  for(int i = 0;i < SIZE_CARD;i++){
+    for(int j = 0;j < SIZE_CARD;j++){
+      printf("%d ",card[i][j]);
+    }
+    printf("\n");
+  }
+
+
     // send card to enclave
-    if((ret = be_init_card(global_eid1,card, sizeof(card[1][0]))) != SGX_SUCCESS)
+    if((ret = be_init_card(global_eid1,card,SIZE_CARD )) != SGX_SUCCESS)
     {
       print_error_message(ret,"e1_init_card");
       return 1;

@@ -43,7 +43,7 @@ extern "C" {
 int printf(const char *fmt, ...);
 void e1_printf_hello_world(void);
 void e1_sum_array(int *ptr,size_t n,int *sum);
-void be_encrypt_card(int **card, size_t n);
+void be_init_card(int **card, size_t n);
 
 
 #if defined(__cplusplus)
