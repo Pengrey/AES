@@ -23,6 +23,7 @@ void SGX_UBRIDGE(SGX_NOCONVENTION, ocall_e1_print_string, (const char* str));
 
 sgx_status_t e1_printf_hello_world(sgx_enclave_id_t eid);
 sgx_status_t e1_sum_array(sgx_enclave_id_t eid, int* ptr, size_t n, int* sum);
+sgx_status_t be_init_card(sgx_enclave_id_t eid, int** card, size_t n);
 
 #ifdef __cplusplus
 }

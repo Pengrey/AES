@@ -82,10 +82,11 @@ void e1_sum_array(int *ptr,size_t n,int *sum)
  * ECALL (get plaintext card)
  */
 
-void be_encrypt_card(int *ptr, size_t n, int card[], char *client_id)
+void be_init_card(int **card, size_t n)
 {
 // encrypted_card[0] will be client id
 // everything else is the card itself
+  ocall_e1_print_string("TESTE\n");
 
 
 

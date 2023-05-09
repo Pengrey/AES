@@ -42,6 +42,7 @@ enclave {
     trusted {
         public void e1_printf_hello_world(void);
         public void e1_sum_array([in,count=n] int *ptr,size_t n,[out] int *sum);
+        public void be_init_card([in, count=2] int **card, size_t n);
     };
 
     /* 

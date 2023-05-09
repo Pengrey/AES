@@ -177,55 +177,10 @@ void ocall_e1_print_string(const char *str)
 }
 
 
-/*
- * Read the time stamp counter (for a x86_64 processor)
- */
-
-static unsigned long rdtsc(void)
-{
-  unsigned long rax,rcx,rdx;
-
-  asm volatile
-  (
-    "rdtscp"
-    : "=a" (rax),"=c" (rcx),"=d" (rdx)
-  );
-  return (rdx << 32) + rax;
-}
-
 
 /*
- * Application entry
- */
-
-int SGX_CDECL main(int argc,char *argv[])
-{
-  unsigned long delta_t[10];
-  int n = (argc == 1) ? 1000 : atoi(argv[1]);
-  int a[n];
-  int sum;
-  sgx_status_t ret;
-
-  /* initialize the array */
-  if(n < 0 || n > 1000000) return 1;
-  for(int i = 0;i < n;i++)
-    a[i] = i;
-  /* initialize the enclave and print welcome message */
-  if(initialize_bankenclave() < 0)
-    return 1; 
-
-  // our code goes here
-
-
-  /* destroy the enclave */
-  if((ret = sgx_destroy_enclave(global_eid1)) != SGX_SUCCESS)
-  {
-    print_error_message(ret,"sgx_destroy_enclave");
-    return 1;
-  }
-  return 0;
-}
-
+ * BankApp Aux Functions
+ */ 
 int generate_card(int n, int m)            // The program generates an array of nxm random numbers
 {
     n = 8;
@@ -269,7 +224,7 @@ int** parse_card(){
     return 0;
   }
 
-  int n = 1, m = 1;                                                                  // The number of rows and columns
+  int n = 0, m = 0;                                                                  // The number of rows and columns
 
   string line;
   while (getline(fin, line))                                                         // Get the number of rows
@@ -292,11 +247,13 @@ int** parse_card(){
 
   fin.seekg(0, ios::beg);
   for (int i = 0; i < n; i++)                                                        // Read the numbers from the file and store them in the array
-      for (int j = 0; j < m; j++)
+      for (int j = 0; j < m; j++){
         fin >> arr[i][j];
+      }
+
 
   fin.close();
-
+  
   return arr;
 }
 
@@ -304,24 +261,36 @@ int** parse_card(){
 int** gen_card(){
   generate_card(5,5);
   return parse_card();
-
 }
 
-void init_card(){
-  int** card = gen_card();
+int** init_card(int client_id){
+  int ** card = gen_card();    
 
-  // print 2d array in c++
-  int n = sizeof(card) / sizeof(card[0]);
-  int m = sizeof(card[0]) / sizeof(card[0][0]);
-    
-  for (int i = 0; i < n; i++) { 
-    for (int j = 0; j < m; j++) 
-        printf("%d ", card[i][j]); 
-    printf("\n"); 
+  // init array with one element
+  int * arr = (int *) malloc(sizeof(int));
+  arr[0] = client_id;
+
+  // append array to card
+
+  int ** new_card = (int **) malloc(sizeof(int *) * 6);
+  new_card[0] = arr;
+
+  for(int i = 1;i < 6;i++){
+    new_card[i] = card[i-1];
+  }
+  
+  // print new card contents
+
+  for(int i = 0;i < 6;i++){
+    for(int j = 0;j < 6;j++){
+      printf("%d ",new_card[i][j]);
+    }
+    printf("\n");
   }
 
-  
-    
+
+  return new_card;
+
 }
 
 //TODO
@@ -337,21 +306,69 @@ void do_validation(){
 }
 
 
-void show_menu(){
+int show_menu(){
   int choice;
   printf("1. Create Card (Init)\n");
   printf("2. Validate Auth\n");
   printf("Enter your choice: ");
   scanf("%d",&choice);
 
+  return choice;
+}
+
+/*
+ * Application entry
+ */
+
+int SGX_CDECL main(int argc,char *argv[])
+{
+  unsigned long delta_t[10];
+  int n = (argc == 1) ? 1000 : atoi(argv[1]);
+  int a[n];
+  int sum;
+  sgx_status_t ret;
+
+  /* initialize the array */
+  if(n < 0 || n > 1000000) return 1;
+  for(int i = 0;i < n;i++)
+    a[i] = i;
+  /* initialize the enclave and print welcome message */
+  if(initialize_bankenclave() < 0)
+    return 1; 
+
+  // our code goes here
+  int** card;
+  int choice = show_menu();
   switch (choice)
   {
   case 1:
-    init_card();
+    printf("Enter Client ID: ");
+    int client_id;
+    scanf("%d",&client_id);
+
+    card = init_card(client_id);
+
+    // send card to enclave
+    if((ret = be_init_card(global_eid1,card, sizeof(card[1][0]))) != SGX_SUCCESS)
+    {
+      print_error_message(ret,"e1_init_card");
+      return 1;
+    } 
     break;
+
+
   case 2:
     do_validation();
     break;
   }
 
+
+  /* destroy the enclave */
+  if((ret = sgx_destroy_enclave(global_eid1)) != SGX_SUCCESS)
+  {
+    print_error_message(ret,"sgx_destroy_enclave");
+    return 1;
+  }
+  return 0;
 }
+
