@@ -267,9 +267,12 @@ int** gen_card(){
 int** init_card(int client_id){
   int ** card = gen_card();    
 
-  // init array with one element
-  int * arr = (int *) malloc(sizeof(int));
+  // init array with SIZE_CARD elements
+  int * arr = (int *) malloc(sizeof(int) * SIZE_CARD);
   arr[0] = client_id;
+  for (int i = 1; i < SIZE_CARD; i++){
+    arr[i] = 0;
+  }
 
   // append array to card
 
