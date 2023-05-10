@@ -184,7 +184,7 @@ void ocall_e1_print_string(const char *str)
  */ 
 int generate_card()            // The program generates an array of nxm random numbers
 {
-    int n = SIZE_CARD;
+    int n = SIZE_CARD-1;
     int m = SIZE_CARD;                       // The default values are n=8 and m=8
  
     
@@ -280,15 +280,6 @@ int** init_card(int client_id){
     new_card[i] = card[i-1];
   }
   
-  // print new card contents
-
-  for(int i = 0;i < SIZE_CARD;i++){
-    for(int j = 0;j < SIZE_CARD;j++){
-      printf("%d ",new_card[i][j]);
-    }
-    printf("\n");
-  }
-
 
   return new_card;
 
@@ -348,17 +339,17 @@ int SGX_CDECL main(int argc,char *argv[])
     scanf("%d",&client_id);
 
     card = init_card(client_id);
-
-  for(int i = 0;i < SIZE_CARD;i++){
-    for(int j = 0;j < SIZE_CARD;j++){
-      printf("%d ",card[i][j]);
+    printf("-----card---------\n");
+    for(int i = 0;i < SIZE_CARD;i++){
+      for(int j = 0;j < SIZE_CARD;j++){
+        printf("%d ",card[i][j]);
+      }
+      printf("\n");
     }
-    printf("\n");
-  }
-
+    printf("--------------\n");
 
     // send card to enclave
-    if((ret = be_init_card(global_eid1,card,SIZE_CARD )) != SGX_SUCCESS)
+    if((ret = be_init_card(global_eid1,card,SIZE_CARD*SIZE_CARD,SIZE_CARD )) != SGX_SUCCESS)
     {
       print_error_message(ret,"e1_init_card");
       return 1;

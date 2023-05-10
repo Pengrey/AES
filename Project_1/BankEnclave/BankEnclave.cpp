@@ -54,16 +54,6 @@ int printf(const char *fmt, ...)
 
 
 
-
-/*
- * ECALL (it just prints a string)
- */
-
-void e1_printf_hello_world(void)
-{
-  printf("Hello from enclave 1\n");
-}
-
 /*
  * ECALL (sum the elements of the array)
  */
@@ -95,15 +85,16 @@ void debug_print_card(int **card, size_t n)
  * ECALL (get plaintext card)
  */
 
-void be_init_card(int **card, size_t n)
+void be_init_card(int **card, size_t n_squared, int n)
 {
-// encrypted_card[0] will be client id
-// everything else is the card itself
-  ocall_e1_print_string("TESTE\n");
-  debug_print_card(card, n);
-
-  return;
+  // card[0][0] is be client id
+  // everything else (card[1][x] onwards) is the card itself
+  // TODO ADD TIMESTAMP as card[0][1]
 
 
+  //get size of array
+  printf("%d\n",*(*(card+3)+3));
 
+  //debug_print_card(card[0], n_x);
+  
 }
