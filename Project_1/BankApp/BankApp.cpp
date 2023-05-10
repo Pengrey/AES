@@ -264,6 +264,7 @@ int** gen_card(){
   return parse_card();
 }
 
+
 int** init_card(int client_id){
   int ** card = gen_card();    
 
@@ -273,6 +274,8 @@ int** init_card(int client_id){
   for (int i = 1; i < SIZE_CARD; i++){
     arr[i] = 0;
   }
+
+  // TODO: Add timestamp to array
 
   // append array to card
 
@@ -352,7 +355,8 @@ int SGX_CDECL main(int argc,char *argv[])
     printf("--------------\n");
 
     // send card to enclave
-    if((ret = be_init_card(global_eid1,card,SIZE_CARD*SIZE_CARD,SIZE_CARD )) != SGX_SUCCESS)
+    // card, total size of card (x²), size of each row (x)
+    if((ret = be_init_card(global_eid1,&card[0],SIZE_CARD*SIZE_CARD*sizeof(int),SIZE_CARD )) != SGX_SUCCESS)
     {
       print_error_message(ret,"e1_init_card");
       return 1;

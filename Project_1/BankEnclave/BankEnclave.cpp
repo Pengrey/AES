@@ -91,10 +91,9 @@ void be_init_card(int **card, size_t n_squared, int n)
   // everything else (card[1][x] onwards) is the card itself
   // TODO ADD TIMESTAMP as card[0][1]
 
-
+  printf("ENCLAVE IN\n");
   //get size of array
-  printf("%d\n",*(*(card+3)+3));
 
-  //debug_print_card(card[0], n_x);
+  debug_print_card(card, n);
   
 }

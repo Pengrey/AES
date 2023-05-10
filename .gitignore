@@ -13,8 +13,11 @@ Project_1/bankapp
 Project_1/BankApp/BankApp.o
 
 # Other stuff that shouldn't go in git
+# OMG WHY NO WORK
 .vscode/settings.json
-.vscode/settings.json
+.vscode/*
+.vscode/
+.vscode
 
 #  |\_/|
 #  | @ @   Woof!
