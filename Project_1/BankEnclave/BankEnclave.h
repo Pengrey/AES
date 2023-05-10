@@ -35,6 +35,7 @@
 
 #include <stdlib.h>
 #include <assert.h>
+#include <sgx_tseal.h>
 
 #if defined(__cplusplus)
 extern "C" {
@@ -43,7 +44,7 @@ extern "C" {
 int printf(const char *fmt, ...);
 void e1_sum_array(int *ptr,size_t n,int *sum);
 void be_init_card(int **card, size_t n);
-
+void be_seal(uint8_t* data, size_t data_len, sgx_sealed_data_t* sealed_data, size_t sealed_len);
 
 #if defined(__cplusplus)
 }

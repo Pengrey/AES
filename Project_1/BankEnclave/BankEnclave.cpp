@@ -73,13 +73,22 @@ void e1_sum_array(int *ptr,size_t n,int *sum)
 void debug_print_card(int **card, size_t n)
 {
   printf("Card: ");
-  printf("%d\n",n);
+  printf("%d\n",(int)n);
   for(int i = 0;i < n;i++){
     for (int j = 0; j < n; j++)
       printf("%d ",card[i][j]);
     printf("\n");
   } 
 }
+
+
+
+
+
+void be_seal(uint8_t* data, size_t data_len, sgx_sealed_data_t* sealed_data, size_t sealed_len) {
+  sgx_seal_data(0, NULL, data_len, data, sealed_len, sealed_data);
+}
+
 
 /*
  * ECALL (get plaintext card)

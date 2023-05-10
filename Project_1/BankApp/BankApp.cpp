@@ -41,6 +41,7 @@
 
 using namespace std;
 
+#include "sgx_utils.h"
 #include "sgx_urts.h"
 #include "BankApp.h"
 #include "BankEnclave_u.h"
@@ -314,6 +315,87 @@ int show_menu(){
   return choice;
 }
 
+void send_card(int client_id){
+  int** card;
+
+  card = init_card(client_id);
+
+  //debug
+  printf("-----card---------\n");
+  for(int i = 0;i < SIZE_CARD;i++){
+    for(int j = 0;j < SIZE_CARD;j++){
+      printf("%d ",card[i][j]);
+    }
+    printf("\n");
+  }
+  printf("--------------\n\n");
+
+  // send card to enclave
+  // card, total size of card (x²), size of each row (x)
+  /*   
+  if((ret = be_init_card(global_eid1,&card[0],SIZE_CARD )) != SGX_SUCCESS)
+  {
+    print_error_message(ret,"e1_init_card");
+    return 1;
+  }  
+  */
+/* 
+  // convert card from ints to uint8_t
+
+  //allocate mem for new card of same size
+  uint8_t* new_card= (uint8_t*) malloc(sizeof(uint8_t) * SIZE_CARD * SIZE_CARD);
+
+
+  // copy card to new card
+  for(int i = 0;i < SIZE_CARD;i++){
+    for(int j = 0;j < SIZE_CARD;j++){
+      new_card[i*SIZE_CARD + j] =  card[i][j];
+    }
+  }
+
+  //debug print new card
+  printf("-----card_test---------\n");
+  for(int i = 0;i < SIZE_CARD;i++){
+    for(int j = 0;j < SIZE_CARD;j++){
+      printf("%d ",new_card[i*SIZE_CARD + j]);
+    }
+    printf("\n");
+  }
+  printf("--------------\n\n");
+  return;
+ */
+
+  /* uint8_t* card_test= (uint8_t*) &card;
+
+
+  printf("card_test: %hhn\n",card_test);
+  printf("card_test[0]: %d\n",card_test[0]);
+  
+  printf("card_test[0][0]: %d\n",card_test[0]);
+  return;
+ */
+
+// int** to uint8_t*
+uint8_t* card_test = (uint8_t*) card;
+printf("card: %d\n",card_test[1]);
+
+
+return;
+    // Seal the card
+    size_t sealed_size = sizeof(sgx_sealed_data_t) + sizeof(card)*SIZE_CARD*SIZE_CARD;
+    int* sealed_data = (int*)malloc(sealed_size);
+
+    sgx_status_t ecall_status;
+    if ((ecall_status = be_seal(global_eid1,
+            (uint8_t*) card, sizeof(card)*SIZE_CARD*SIZE_CARD,
+            (sgx_sealed_data_t*)sealed_data, sealed_size)) != SGX_SUCCESS) {
+
+            print_error_message(ecall_status,"sgx_destroy_enclave");
+
+    }
+    printf("DONE?????");
+}
+
 /*
  * Application entry
  */
@@ -344,25 +426,8 @@ int SGX_CDECL main(int argc,char *argv[])
     int client_id;
     scanf("%d",&client_id);
 
-    card = init_card(client_id);
-    printf("-----card---------\n");
-    for(int i = 0;i < SIZE_CARD;i++){
-      for(int j = 0;j < SIZE_CARD;j++){
-        printf("%d ",card[i][j]);
-      }
-      printf("\n");
-    }
-    printf("--------------\n");
-
-    // send card to enclave
-    // card, total size of card (x²), size of each row (x)
-    if((ret = be_init_card(global_eid1,&card[0],SIZE_CARD )) != SGX_SUCCESS)
-    {
-      print_error_message(ret,"e1_init_card");
-      return 1;
-    } 
+    send_card(client_id);
     break;
-
 
   case 2:
     do_validation();
