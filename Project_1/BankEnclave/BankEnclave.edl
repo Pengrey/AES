@@ -41,7 +41,7 @@ enclave {
     
     trusted {
         public void e1_sum_array([in,count=n] int *ptr,size_t n,[out] int *sum);
-        public void be_init_card([in, count=n] int **card, size_t n_squared,int n);
+        public void be_init_card([in, count=n] int **card, size_t n);
     };
 
     /* 

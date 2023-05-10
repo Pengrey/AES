@@ -85,7 +85,7 @@ void debug_print_card(int **card, size_t n)
  * ECALL (get plaintext card)
  */
 
-void be_init_card(int **card, size_t n_squared, int n)
+void be_init_card(int **card,size_t n)
 {
   // card[0][0] is be client id
   // everything else (card[1][x] onwards) is the card itself

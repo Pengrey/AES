@@ -356,7 +356,7 @@ int SGX_CDECL main(int argc,char *argv[])
 
     // send card to enclave
     // card, total size of card (x²), size of each row (x)
-    if((ret = be_init_card(global_eid1,&card[0],SIZE_CARD*SIZE_CARD*sizeof(int),SIZE_CARD )) != SGX_SUCCESS)
+    if((ret = be_init_card(global_eid1,&card[0],SIZE_CARD )) != SGX_SUCCESS)
     {
       print_error_message(ret,"e1_init_card");
       return 1;
