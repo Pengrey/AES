@@ -271,17 +271,17 @@ int** init_card(int client_id){
   // init array with SIZE_CARD elements
   int * arr = (int *) malloc(sizeof(int) * SIZE_CARD);
   arr[0] = client_id;
-  for (int i = 1; i < SIZE_CARD; i++){
+  arr[1] = (int)time(NULL);
+  for (int i = 2; i < SIZE_CARD; i++){
     arr[i] = 0;
   }
 
-  // TODO: Add timestamp to array
 
   // append array to card
 
   int ** new_card = (int **) malloc(sizeof(int *) * SIZE_CARD);
   new_card[0] = arr;
-
+  
   for(int i = 1;i < SIZE_CARD;i++){
     new_card[i] = card[i-1];
   }
