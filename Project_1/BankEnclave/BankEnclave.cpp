@@ -32,6 +32,8 @@
 
 #include <stdarg.h>
 #include <stdio.h>      /* vsnprintf */
+#include <cstdio>
+#include <math.h>
 
 #include "BankEnclave.h"
 #include "BankEnclave_t.h"  /* e1_print_string */
@@ -54,6 +56,7 @@ int printf(const char *fmt, ...)
 
 
 
+
 /*
  * ECALL (sum the elements of the array)
  */
@@ -70,15 +73,16 @@ void e1_sum_array(int *ptr,size_t n,int *sum)
 /*
  * ECALL (DEBUG print the elements of the array)
  */
-void debug_print_card(int **card, size_t n)
+void debug_print_card(uint8_t *card, size_t n)
 {
-  printf("Card: ");
-  printf("%d\n",(int)n);
+
+  int card_size = (sizeof(card) / sizeof(card[0]));
+   printf("-----card_bytes---------\n");
   for(int i = 0;i < n;i++){
-    for (int j = 0; j < n; j++)
-      printf("%d ",card[i][j]);
-    printf("\n");
-  } 
+    printf("%c",card[i]);
+  }
+  printf("\n--------------\n\n");
+return;
 }
 
 
@@ -90,11 +94,45 @@ void be_seal(uint8_t* data, size_t data_len, sgx_sealed_data_t* sealed_data, siz
 }
 
 
+/* 
+//uint8_t* card_to_bytes(int **card) {
+void card_to_bytes(int **card) {
+
+// convert the int** matrix into a byte array s o m e h o w
+
+  // first convert to char array
+
+  // to be able to make it back into an array we're going 
+  // to add some extra info as an int at the start of the array
+
+  // so the structure will be
+
+  // [0] - number of rows/cols (n, where the card has n² elements)
+  // [1] - size in bytes of the client ID that comes after
+  // [2] until 2 + whatever it is - client ID
+  // after that, size of timestamp
+  // then timestamp
+  // then a null byte to separate the header from the card
+  // then the card itself
+
+  int client_id = card[0][0];
+  int ts = card[0][1]; // timestamp
+
+  // convert client id to char array of the algarisms
+  int client_id_len = (int)((ceil(log10(client_id))+1)*sizeof(char));
+  char client_id_str[client_id_len];
+  sprintf(client_id_str, "%d", client_id);
+
+  printf("client id: %s\n", client_id_str);
+
+  return;
+}
+ */
 /*
  * ECALL (get plaintext card)
  */
 
-void be_init_card(int **card,size_t n)
+void be_init_card(uint8_t *card,size_t n)
 {
   // card[0][0] is be client id
   // everything else (card[1][x] onwards) is the card itself
@@ -104,5 +142,7 @@ void be_init_card(int **card,size_t n)
   //get size of array
 
   debug_print_card(card, n);
-  
+
+ // uint8_t* card_bytes = card_to_bytes(card);
+  //card_to_bytes(card);
 }

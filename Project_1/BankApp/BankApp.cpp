@@ -212,7 +212,7 @@ int generate_card()            // The program generates an array of nxm random n
     return 0;
 }
 
-
+/*
 
 int** parse_card(){
   // From parser.cpp
@@ -259,35 +259,29 @@ int** parse_card(){
   return arr;
 }
 
+*/
 
-int** gen_card(){
+string card_to_string(){
+  std::ifstream ifs("card.txt");
+  std::string content( (std::istreambuf_iterator<char>(ifs) ),
+                       (std::istreambuf_iterator<char>()    ) );
+
+
+  return content;
+}
+
+std::string get_card(){
   generate_card();
-  return parse_card();
+  return card_to_string();
 }
 
 
-int** init_card(int client_id){
-  int ** card = gen_card();    
+std::string init_card(std::string client_id){
+  std::string card = get_card();    
+  std::string ts = to_string((int)time(NULL));
 
-  // init array with SIZE_CARD elements
-  int * arr = (int *) malloc(sizeof(int) * SIZE_CARD);
-  arr[0] = client_id;
-  arr[1] = (int)time(NULL);
-  for (int i = 2; i < SIZE_CARD; i++){
-    arr[i] = 0;
-  }
-
-
-  // append array to card
-
-  int ** new_card = (int **) malloc(sizeof(int *) * SIZE_CARD);
-  new_card[0] = arr;
-  
-  for(int i = 1;i < SIZE_CARD;i++){
-    new_card[i] = card[i-1];
-  }
-  
-
+  // concat client_id and ts to start of card
+  std::string new_card = client_id +"\n" + ts +"\n"+ card;
   return new_card;
 
 }
@@ -315,30 +309,30 @@ int show_menu(){
   return choice;
 }
 
-void send_card(int client_id){
-  int** card;
+int send_card(std::string client_id){
 
-  card = init_card(client_id);
+  std::string card = init_card(client_id);
 
   //debug
   printf("-----card---------\n");
-  for(int i = 0;i < SIZE_CARD;i++){
-    for(int j = 0;j < SIZE_CARD;j++){
-      printf("%d ",card[i][j]);
-    }
-    printf("\n");
-  }
+  cout << card << endl;
   printf("--------------\n\n");
 
+  // turn card into uint8_t array
+  uint8_t* card_bytes = (uint8_t*) malloc(sizeof(uint8_t) * card.length());
+  memcpy(card_bytes,card.c_str(),card.length());
+
+  
+  cout << "card_size: " << card.length() << endl;
   // send card to enclave
-  // card, total size of card (x²), size of each row (x)
-  /*   
-  if((ret = be_init_card(global_eid1,&card[0],SIZE_CARD )) != SGX_SUCCESS)
+  sgx_status_t ret;
+
+  if((ret = be_init_card(global_eid1,card_bytes,card.length() )) != SGX_SUCCESS)
   {
     print_error_message(ret,"e1_init_card");
     return 1;
   }  
-  */
+  
 /* 
   // convert card from ints to uint8_t
 
@@ -376,10 +370,11 @@ void send_card(int client_id){
  */
 
 // int** to uint8_t*
+/* 
 uint8_t* card_test = (uint8_t*) card;
 printf("card: %d\n",card_test[1]);
-
-
+ */
+/* 
 return;
     // Seal the card
     size_t sealed_size = sizeof(sgx_sealed_data_t) + sizeof(card)*SIZE_CARD*SIZE_CARD;
@@ -393,7 +388,8 @@ return;
             print_error_message(ecall_status,"sgx_destroy_enclave");
 
     }
-    printf("DONE?????");
+    printf("DONE?????"); */
+    return 0;
 }
 
 /*
@@ -422,16 +418,19 @@ int SGX_CDECL main(int argc,char *argv[])
   switch (choice)
   {
   case 1:
+  {
     printf("Enter Client ID: ");
-    int client_id;
-    scanf("%d",&client_id);
-
+    std::string client_id;
+    cin.ignore();
+    std::getline(cin, client_id);
     send_card(client_id);
     break;
-
+  }
   case 2:
-    do_validation();
+  {
+    //do_validation();
     break;
+  }
   }
 
 
