@@ -92,67 +92,123 @@ void seal_card(uint8_t* data, size_t data_len, sgx_sealed_data_t* sealed_data, s
   printf("sealing card\n");
   printf("data_len: %ld\n", data_len);
   printf("data: %s\n", data);
-
-  sealed_len = sgx_calc_sealed_data_size(0, data_len);
-  sgx_seal_data(0, NULL, data_len, data, sealed_len, sealed_data);
   printf("sealed_len: %ld\n", sealed_len);
+  printf("Sealed_data: %s\n", sealed_data);
+/* 
+  sgx_seal_data(
+              0,          // mac len 
+              NULL,       // mac
+              data_len,   // card len
+              data,       // card
+              sealed_len, // sealed card len
+              sealed_data // sealed card
+              );
+ */
+  sgx_attributes_t attr_mask;
+  attr_mask.flags = SGX_FLAGS_INITTED | SGX_FLAGS_DEBUG | SGX_FLAGS_KSS;
+  attr_mask.flags &= ~SGX_FLAGS_MODE64BIT;
+  attr_mask.flags &= ~(SGX_FLAGS_PROVISION_KEY | SGX_FLAGS_EINITTOKEN_KEY);
+  attr_mask.xfrm = 0; 
+
+  sgx_seal_data_ex(
+    SGX_KEYPOLICY_MRENCLAVE, 
+    attr_mask,   /*  Bitmask indicating which attributes the seal
+                     key should be bound to. The recommendation is to set all the
+                     attribute flags, except Mode 64 bit, Provision Key and Launch
+                     key, and none of the XFRM attributes */
+    0, 
+    0,
+    NULL, // TODO - CHANGE LATER
+    data_len,
+    data,
+    sealed_len,
+    sealed_data
+    );
+
+
+  printf("Sealed\n\n");
+  printf("-------------------\n");
+  printf("sealed_len: %ld\n", sealed_len);
+  /* sgx_aes_gcm_data_t aes_data = sealed_data->aes_data;
+  uint8_t* payload = aes_data.payload;
+
+  
+  printf("Sealed_data payload: %d\n",  payload); */
+
+  uint8_t* tag = sealed_data->aes_data.payload;
+  printf("Sealed_data tag: %d\n",  tag);
+  printf("-------------------\n");
+  
+
+  printf("sealed_len: %ld\n", sealed_len);
+  uint8_t* plaintext;
+  uint32_t plaintext_len;
+
+  plaintext_len = sgx_get_encrypt_txt_len(sealed_data);
+  sgx_unseal_data(sealed_data, NULL, 0, plaintext, &plaintext_len);
+
+  printf("plaintext_len: %d\n", plaintext_len);
+  printf("plaintext: %s\n", plaintext);
+  printf("-------------------\n");
+
+
+}
+
+/* 
+
+int validate_response(string card, int expected, char response){
+    return card[expected - 1] == response;
+}
+
+ */
+
+void unseal_card(sgx_sealed_data_t* sealed_data, size_t sealed_size, uint8_t* plaintext, uint32_t plaintext_len) {
+
+  printf("UNsealing card\n");
+  sgx_unseal_data(sealed_data, NULL, NULL, plaintext, &plaintext_len);
 }
 
 
-
+/*
+ * ECALL (get seal length)
+ */
 void be_get_seal_len(size_t* data_len, size_t* sealed_len) {
   *sealed_len = sgx_calc_sealed_data_size(0, *data_len);
 }
 
 
 
-/* 
-//uint8_t* card_to_bytes(int **card) {
-void card_to_bytes(int **card) {
-
-// convert the int** matrix into a byte array s o m e h o w
-
-  // first convert to char array
-
-  // to be able to make it back into an array we're going 
-  // to add some extra info as an int at the start of the array
-
-  // so the structure will be
-
-  // [0] - number of rows/cols (n, where the card has n² elements)
-  // [1] - size in bytes of the client ID that comes after
-  // [2] until 2 + whatever it is - client ID
-  // after that, size of timestamp
-  // then timestamp
-  // then a null byte to separate the header from the card
-  // then the card itself
-
-  int client_id = card[0][0];
-  int ts = card[0][1]; // timestamp
-
-  // convert client id to char array of the algarisms
-  int client_id_len = (int)((ceil(log10(client_id))+1)*sizeof(char));
-  char client_id_str[client_id_len];
-  sprintf(client_id_str, "%d", client_id);
-
-  printf("client id: %s\n", client_id_str);
-
-  return;
-}
- */
-
 /*
  * ECALL (get plaintext card)
  */
 
+
+// actually a test function
 void be_init_card(uint8_t *card,size_t card_size,  sgx_sealed_data_t* sealed_data, size_t sealed_len)
 {
   printf("ENCLAVE IN\n");
+  // debug_print_card(card, card_size);
 
-  debug_print_card(card, card_size);
   seal_card(card, card_size,sealed_data, sealed_len);
-
   printf("ENCLAVE OUT\n");
 }
 
 
+
+/*
+ * ECALL (validate client request)
+ */
+
+void be_validate(sgx_sealed_data_t* sealed_card, size_t sealed_len, int x, int y, uint8_t* client_id, size_t client_id_len, int* valid) {
+  // TODO actual validation, for now it's a unsealing test
+  printf("ENCLAVE IN\n");
+  
+  uint8_t* plaintext_card;
+  uint32_t plaintext_len;
+  
+  unseal_card(sealed_card, sealed_len, plaintext_card, plaintext_len);
+  
+  printf("plaintext_len: %d\n", plaintext_len);
+  printf("plaintext_card: %s\n", plaintext_card);
+  printf("ENCLAVE OUT\n");
+}

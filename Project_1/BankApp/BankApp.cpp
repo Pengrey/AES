@@ -38,6 +38,7 @@
 #include <fstream>
 #include <cstdlib>
 #include <ctime>
+#include <sstream>
 
 using namespace std;
 
@@ -180,23 +181,40 @@ void ocall_e1_print_string(const char *str)
 
 
 
-/*
- * BankApp Aux Functions
- */ 
-int generate_card()            // The program generates an array of nxm random numbers
-{
-    int n = SIZE_CARD-1;
-    int m = SIZE_CARD;                       // The default values are n=8 and m=8
- 
-    
+
+string generate_card()                
+{   
+    stringstream result;
     ofstream fout("card.txt");              // The numbers are stored in a file named "card.txt"
     srand(time(NULL));
 
-    for (int i = 0; i < n; i++)             // The program also prints the numbers on the screen
-    {   
-        for (int j = 0; j < m; j++)
+    // first row
+    fout << "     ";                          
+    for (int k = 1; k <= SIZE_CARD; k++) {
+        if (k < 100)                        // The number is padded with zeros to make it 3 digits
+            fout << "0";
+        if (k < 10) 
+            fout << "0";
+
+        fout << k << " ";                   // The numbers are separated by a space
+    }
+    fout << endl;                           // The numbers are separated by a new line
+
+    for (int i = 0; i < SIZE_CARD; i++)     // The program also prints the numbers on the screen
+    { 
+        if (i < 26) {                       // The first column is labeled with letters from A to Z
+            fout << "  " << (char)(i + 65) << "  ";
+        } else if (i < 702) {
+            fout << " " << (char)(i / 26 + 64) << (char)(i % 26 + 65) << "  ";
+        } else {
+            fout << (char)(i / 676 + 64) << (char)(i / 26 % 26 + 65) << (char)(i % 26 + 65) << "  ";
+        }
+
+        for (int j = 0; j < SIZE_CARD; j++)
         {
             int num = rand() % 999 + 1;     // The range of the numbers are from the range 001 to 999
+
+            result << num;                  // Add the number to the result string
 
             if (num < 100)                  // The number is padded with zeros to make it 3 digits
                 fout << "0";
@@ -209,82 +227,14 @@ int generate_card()            // The program generates an array of nxm random n
         fout << endl;                       // The numbers are separated by a new line
     }
     fout.close();
-    return 0;
+    return result.str();
 }
 
-/*
-
-int** parse_card(){
-  // From parser.cpp
-  string path = "card.txt";                                                           // The default path is "card.txt"
-
-  ifstream fin(path.c_str());                                                        // The file is opened in read mode
-
-  if (!fin)                                                                          // If the file does not exist, print an error message and exit
-  {
-    cout << "Error: File does not exist" << endl;
-    return 0;
-  }
-
-  int n = 0, m = 0;                                                                  // The number of rows and columns
-
-  string line;
-  while (getline(fin, line))                                                         // Get the number of rows
-    n++;
-
-  fin.clear();
-  fin.seekg(0, ios::beg);
-  getline(fin, line);
-
-  for (int i = 0; i < line.length(); i++)                                             // Get the number of columns
-    if (line[i] == ' ')
-      m++;
-
-  int **arr = new int*[n];                                                            // Create the 2D array dynamically
-  for (int i = 0; i < n; i++)
-    arr[i] = new int[m];
-
-
-  fin.clear();
-
-  fin.seekg(0, ios::beg);
-  for (int i = 0; i < n; i++)                                                        // Read the numbers from the file and store them in the array
-      for (int j = 0; j < m; j++){
-        fin >> arr[i][j];
-      }
-
-
-  fin.close();
-  
-  return arr;
-}
-
-*/
-
-string card_to_string(){
-  std::ifstream ifs("card.txt");
-  std::string content( (std::istreambuf_iterator<char>(ifs) ),
-                       (std::istreambuf_iterator<char>()    ) );
-
-
-  return content;
-}
-
-std::string get_card(){
-  generate_card();
-  return card_to_string();
+string init_card(string client_id){
+  return generate_card() + "\n" + client_id;
 }
 
 
-std::string init_card(std::string client_id){
-  std::string card = get_card();    
-  std::string ts = to_string((int)time(NULL));
-
-  // concat client_id and ts to start of card
-  std::string new_card = client_id +"\n" + ts +"\n"+ card;
-  return new_card;
-
-}
 
 //TODO
 void do_validation(){
@@ -295,6 +245,7 @@ void do_validation(){
     scanf("%d",&y);
 
     // enclave stuff to validate card?
+
 
 }
 
@@ -322,6 +273,10 @@ int send_card(std::string client_id){
   uint8_t* card_bytes = (uint8_t*) malloc(sizeof(uint8_t) * card.length());
   memcpy(card_bytes,card.c_str(),card.length());
 
+  // turn client_id into uints
+  uint8_t* client_id_b = (uint8_t*) malloc(sizeof(uint8_t) * client_id.length());
+  memcpy(client_id_b,client_id.c_str(),client_id.length());
+
 
   cout << "card_size: " << card.length() << endl;
   // send card to enclave
@@ -337,76 +292,40 @@ int send_card(std::string client_id){
 
   if((ret = be_get_seal_len(global_eid1,card_size_p, sealed_len_p)) != SGX_SUCCESS)
   {
-    print_error_message(ret,"e1_init_card");
+    print_error_message(ret,"be_get_seal_len");
     return 1;
   }  
 
+  uint8_t* payload;
+  size_t payload_len;
   if((ret = be_init_card(global_eid1,card_bytes,card.length(), sealed_card, sealed_len)) != SGX_SUCCESS)
   {
-    print_error_message(ret,"e1_init_card");
+    print_error_message(ret,"be_init_card");
     return 1;
   }  
+
+ 
+/* 
+  int* is_valid;
+  if((ret = be_validate(global_eid1,sealed_card,sealed_len,0,0, client_id_b, client_id.size(),is_valid)) != SGX_SUCCESS)
+  {
+    print_error_message(ret,"be_init_card");
+    return 1;
+  }   */
+/* 
 
   printf("sealed_len: %ld\n",sealed_len);
   printf("sealed data: %s\n",sealed_card);
-  
-/* 
-  // convert card from ints to uint8_t
-
-  //allocate mem for new card of same size
-  uint8_t* new_card= (uint8_t*) malloc(sizeof(uint8_t) * SIZE_CARD * SIZE_CARD);
-
-
-  // copy card to new card
-  for(int i = 0;i < SIZE_CARD;i++){
-    for(int j = 0;j < SIZE_CARD;j++){
-      new_card[i*SIZE_CARD + j] =  card[i][j];
-    }
-  }
-ignora isto old code
-  //debug print new card
-  printf("-----card_test---------\n");
-  for(int i = 0;i < SIZE_CARD;i++){
-    for(int j = 0;j < SIZE_CARD;j++){
-      printf("%d ",new_card[i*SIZE_CARD + j]);
-    }
-    printf("\n");
-  }
-  printf("--------------\n\n");
-  return;
  */
+  //write sealed card to binary file
 
-  /* uint8_t* card_test= (uint8_t*) &card;
+  // create binary file first
 
+  FILE *file_ptr;
+  file_ptr = fopen("test.bin","wb");  // r for read, b for binary
+  fwrite(sealed_card,sizeof(sealed_card),sealed_len,file_ptr);
 
-  printf("card_test: %hhn\n",card_test);
-  printf("card_test[0]: %d\n",card_test[0]);
-  
-  printf("card_test[0][0]: %d\n",card_test[0]);
-  return;
- */
-
-// int** to uint8_t*
-/* 
-uint8_t* card_test = (uint8_t*) card;
-printf("card: %d\n",card_test[1]);
- */
-/* 
-return;
-    // Seal the card
-    size_t sealed_size = sizeof(sgx_sealed_data_t) + sizeof(card)*SIZE_CARD*SIZE_CARD;
-    int* sealed_data = (int*)malloc(sealed_size);
-
-    sgx_status_t ecall_status;
-    if ((ecall_status = be_seal(global_eid1,
-            (uint8_t*) card, sizeof(card)*SIZE_CARD*SIZE_CARD,
-            (sgx_sealed_data_t*)sealed_data, sealed_size)) != SGX_SUCCESS) {
-
-            print_error_message(ecall_status,"sgx_destroy_enclave");
-
-    }
-    printf("DONE?????"); */
-    return 0;
+  return 0;
 }
 
 /*

@@ -1,0 +1,32 @@
+    /* sgx_seal_data_ex
+     * Purpose: Expert version of sgx_seal_data which is used if the key_policy/attribute_mask/misc_mask
+     *          need to be modified from the default values.
+     *
+     * Parameters:
+     *      key_policy - [IN] Specifies the measurement to use in key derivation
+     *      attribute_mask - [IN] Identifies which platform/enclave attributes to use in key derivation
+     *      misc_mask - [IN] The mask for MISC_SELECT
+     *      additional_MACtext_length - [IN] length of the plaintext data stream in bytes
+     *                                  The additional data is optional and thus the length
+     *                                  can be zero if no data is provided
+     *      p_additional_MACtext - [IN] pointer to the plaintext data stream to be GCM protected
+     *                             The additional data is optional. You may pass a NULL pointer
+     *                             but additional_MACtext_length must be zero in that case
+     *      text2encrypt_length - [IN] length of the data stream to encrypt in bytes
+     *      p_text2encrypt - [IN] pointer to data stream to encrypt
+     *      sealed_data_size - [IN] Size of the sealed data buffer passed in
+     *      p_sealed_data - [OUT] pointer to the sealed data structure containing protected data
+     *
+     * Return Value:
+     *      sgx_status_t - SGX Error code
+    */
+    sgx_status_t SGXAPI sgx_seal_data_ex(
+        const uint16_t key_policy,
+        const sgx_attributes_t attribute_mask,
+        const sgx_misc_select_t misc_mask,
+        const uint32_t additional_MACtext_length,
+        const uint8_t *p_additional_MACtext,
+        const uint32_t text2encrypt_length,
+        const uint8_t *p_text2encrypt,
+        const uint32_t sealed_data_size,
+        sgx_sealed_data_t *p_sealed_data);
