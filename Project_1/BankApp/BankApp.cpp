@@ -322,16 +322,33 @@ int send_card(std::string client_id){
   uint8_t* card_bytes = (uint8_t*) malloc(sizeof(uint8_t) * card.length());
   memcpy(card_bytes,card.c_str(),card.length());
 
-  
+
   cout << "card_size: " << card.length() << endl;
   // send card to enclave
   sgx_status_t ret;
+  sgx_sealed_data_t* sealed_card ;
+  //uint32_t sealed_size = sgx_calc_sealed_data_size(0,card.length());
+  size_t sealed_len ;
+  size_t* sealed_len_p = &sealed_len;
 
-  if((ret = be_init_card(global_eid1,card_bytes,card.length() )) != SGX_SUCCESS)
+  size_t card_size = card.length();
+  size_t* card_size_p = &card_size;
+
+
+  if((ret = be_get_seal_len(global_eid1,card_size_p, sealed_len_p)) != SGX_SUCCESS)
   {
     print_error_message(ret,"e1_init_card");
     return 1;
   }  
+
+  if((ret = be_init_card(global_eid1,card_bytes,card.length(), sealed_card, sealed_len)) != SGX_SUCCESS)
+  {
+    print_error_message(ret,"e1_init_card");
+    return 1;
+  }  
+
+  printf("sealed_len: %ld\n",sealed_len);
+  printf("sealed data: %s\n",sealed_card);
   
 /* 
   // convert card from ints to uint8_t
@@ -346,7 +363,7 @@ int send_card(std::string client_id){
       new_card[i*SIZE_CARD + j] =  card[i][j];
     }
   }
-
+ignora isto old code
   //debug print new card
   printf("-----card_test---------\n");
   for(int i = 0;i < SIZE_CARD;i++){

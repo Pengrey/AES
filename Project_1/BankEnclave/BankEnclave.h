@@ -44,9 +44,8 @@ extern "C" {
 
 int printf(const char *fmt, ...);
 void e1_sum_array(int *ptr,size_t n,int *sum);
-void be_init_card(uint8_t* card, size_t n);
-void be_seal(uint8_t* data, size_t data_len, sgx_sealed_data_t* sealed_data, size_t sealed_len);
-
+void be_init_card(uint8_t* card, size_t n, sgx_sealed_data_t* sealed_data, size_t sealed_len);
+void be_get_seal_len(size_t* data_len, size_t* sealed_len);
 #if defined(__cplusplus)
 }
 #endif

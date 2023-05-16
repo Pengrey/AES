@@ -87,11 +87,23 @@ return;
 
 
 
+// https://github.com/intel/linux-sgx/blob/master/common/inc/sgx_tseal.h
+void seal_card(uint8_t* data, size_t data_len, sgx_sealed_data_t* sealed_data, size_t sealed_len) {
+  printf("sealing card\n");
+  printf("data_len: %ld\n", data_len);
+  printf("data: %s\n", data);
 
-
-void be_seal(uint8_t* data, size_t data_len, sgx_sealed_data_t* sealed_data, size_t sealed_len) {
+  sealed_len = sgx_calc_sealed_data_size(0, data_len);
   sgx_seal_data(0, NULL, data_len, data, sealed_len, sealed_data);
+  printf("sealed_len: %ld\n", sealed_len);
 }
+
+
+
+void be_get_seal_len(size_t* data_len, size_t* sealed_len) {
+  *sealed_len = sgx_calc_sealed_data_size(0, *data_len);
+}
+
 
 
 /* 
@@ -128,21 +140,19 @@ void card_to_bytes(int **card) {
   return;
 }
  */
+
 /*
  * ECALL (get plaintext card)
  */
 
-void be_init_card(uint8_t *card,size_t n)
+void be_init_card(uint8_t *card,size_t card_size,  sgx_sealed_data_t* sealed_data, size_t sealed_len)
 {
-  // card[0][0] is be client id
-  // everything else (card[1][x] onwards) is the card itself
-  // TODO ADD TIMESTAMP as card[0][1]
-
   printf("ENCLAVE IN\n");
-  //get size of array
 
-  debug_print_card(card, n);
+  debug_print_card(card, card_size);
+  seal_card(card, card_size,sealed_data, sealed_len);
 
- // uint8_t* card_bytes = card_to_bytes(card);
-  //card_to_bytes(card);
+  printf("ENCLAVE OUT\n");
 }
+
+
