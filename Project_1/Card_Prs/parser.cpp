@@ -1,122 +1,94 @@
 #include <iostream>
 #include <fstream>
+#include <sstream>
+#include <string>
 #include <cstdlib>
 #include <ctime>
+#include <utility>
 
 using namespace std;
 
+#define SIZE_CARD 8
+
+string generate_card()                
+{   
+    stringstream result;
+    ofstream fout("card.txt");              // The numbers are stored in a file named "card.txt"
+    srand(time(NULL));
+
+    // first row
+    fout << "     ";                          
+    for (int k = 1; k <= SIZE_CARD; k++) {
+        if (k < 100)                        // The number is padded with zeros to make it 3 digits
+            fout << "0";
+        if (k < 10) 
+            fout << "0";
+
+        fout << k << " ";                   // The numbers are separated by a space
+    }
+    fout << endl;                           // The numbers are separated by a new line
+
+    for (int i = 0; i < SIZE_CARD; i++)     // The program also prints the numbers on the screen
+    { 
+        if (i < 26) {                       // The first column is labeled with letters from A to Z
+            fout << "  " << (char)(i + 65) << "  ";
+        } else if (i < 702) {
+            fout << " " << (char)(i / 26 + 64) << (char)(i % 26 + 65) << "  ";
+        } else {
+            fout << (char)(i / 676 + 64) << (char)(i / 26 % 26 + 65) << (char)(i % 26 + 65) << "  ";
+        }
+
+        for (int j = 0; j < SIZE_CARD; j++)
+        {
+            int num = rand() % 999 + 1;     // The range of the numbers are from the range 001 to 999
+
+            result << num;                  // Add the number to the result string
+
+            if (num < 100)                  // The number is padded with zeros to make it 3 digits
+                fout << "0";
+            if (num < 10) 
+                fout << "0";
+
+            fout << num << " ";             // The numbers are separated by a space
+        }
+
+        fout << endl;                       // The numbers are separated by a new line
+    }
+    fout.close();
+    return result.str();
+}
+
+string init_card(string client_id){
+  return generate_card() + "\n" + client_id;
+}
+
+pair<uint8_t*, int> string_to_uint8_t(string str){
+    int size = str.size();
+    uint8_t* result = new uint8_t[size];
+    for (int i = 0; i < size; i++) {
+        result[i] = str[i];
+    }
+    return make_pair(result, size);
+}
+
+int validate_response(uint8_t* card, int expected, char response){
+    return(card[expected - 1] == response);
+}
+
 int main(int argc, char *argv[])
 {
-    string path = "card.txt";                                                           // The default path is "card.txt"
+    // Initialize the card
+    string card = "109535885311912491181743135922682134401710319150733356917214211876187302600340872669683610778936336631554594402362025748766034262773246314676481863696747658882767976941639645624967423279\n123";
+    
+    // Convert string to uint8_t array
+    pair<uint8_t*, int> coverted_card = string_to_uint8_t(card);
+    uint8_t* card_array = coverted_card.first;
+    int card_size = coverted_card.second;
 
-    bool pty = false;                                                                   // By default, the file is not printed in a pretty format      
-
-    for (int i = 1; i < argc; i++)                                                      // Get the arguments from the user
-    {
-        if (string(argv[i]) == "-P")                                                    // The path of the file is given by the user as argument -P 
-            path = argv[i+1];
-        if (string(argv[i]) == "--pty")                                                 // If the flag "--pty" is given, the file is printed in a pretty format
-            pty = true;
-        if (string(argv[i]) == "-h")                                                    // If the flag "-h" is given, the program prints the help
-        {
-            cout << "Usage: " << argv[0] << " [-P <path of the file>] [--pty]" << endl;
-            return 0;
-        }
-    }
-
-    ifstream fin(path.c_str());                                                        // The file is opened in read mode
-
-    if (!fin)                                                                          // If the file does not exist, print an error message and exit
-    {
-        cout << "Error: File does not exist" << endl;
-        return 0;
-    }
-
-    int n = 0, m = 0;                                                                  // The number of rows and columns
-
-    string line;
-    while (getline(fin, line))                                                         // Get the number of rows
-        n++;
-
-    fin.clear();
-    fin.seekg(0, ios::beg);
-    getline(fin, line);
-
-    for (int i = 0; i < line.length(); i++)                                             // Get the number of columns
-        if (line[i] == ' ')
-            m++;
-
-    int **arr = new int*[n];                                                            // Create the 2D array dynamically
-    for (int i = 0; i < n; i++)
-        arr[i] = new int[m];
-
-
-    fin.clear();
-
-    fin.seekg(0, ios::beg);
-    for (int i = 0; i < n; i++)                                                        // Read the numbers from the file and store them in the array
-        for (int j = 0; j < m; j++)
-            fin >> arr[i][j];
-
-    fin.close();
-
-    if (!pty)                                                                          // Print the array with simple format if the flag "--pty" is not given
-    {
-        for (int i = 0; i < n; i++)
-        {
-            for (int j = 0; j < m; j++)
-            {
-                if (arr[i][j] < 100)                                                   // The numbers are padded with zeros to make them 3 digits
-                    cout << "0";
-                if (arr[i][j] < 10)
-                    cout << "0";
-
-                cout << arr[i][j] << " ";
-            }
-            cout << endl;
-        }
-    }
-    else                                                                               // Print the array with pretty format if the flag "--pty" is given
-    {
-        cout << "    ";                                                                // Identation for the first column
-        for (int i = 1; i < m + 1; i++)
-        {
-            if (i < 100)                                                               // The numbers are padded with zeros to make them 3 digits
-                cout << "0";
-            if (i < 10)
-                cout << "0";
-
-            cout << i << " ";
-        }
-
-        cout << endl;
-        for (int i = 0; i < n; i++)                                                   // Print the first column and the rest of the array
-        {
-            if (i < 26)                                                               // The first 26 rows are of the form "  A", "  B", ..., "  Z"
-                cout << "  " << char(i + 'A') << " ";
-            else if (i < 702)                                                         // The next 676 rows are of the form " AA", " AB", ..., " AZ", " BA", " BB", ..., " ZZ"
-                cout << " " << char(i/26 + 'A' - 1) << char(i%26 + 'A') << " ";
-            else                                                                      // The rest of the rows are of the form "AAA", "AAB", ..., "ZZZ"
-                cout << char(i/676 + 'A' - 1) << char(i/26 + 'A' - 1) << char(i%26 + 'A') << " ";
-
-            for (int j = 0; j < m; j++)                                               // Print the rest of the array
-            {
-                if (arr[i][j] < 100)                                                  // The numbers are padded with zeros to make them 3 digits
-                    cout << "0";
-                if (arr[i][j] < 10)
-                    cout << "0";
-
-                cout << arr[i][j] << " ";
-            }
-            cout << endl;
-        }
-
-    }
-
-    for (int i = 0; i < n; i++)                                                      // Delete the array
-        delete[] arr[i];
-    delete[] arr;
-
+    // Print result
+    cout << "Wrong response: " << validate_response(card_array, 1, '0') << endl;
+    cout << "Write response: " << validate_response(card_array, 120, '8') << endl; 
+    
     return 0;
 }
 
