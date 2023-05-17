@@ -136,6 +136,20 @@ static sgx_errlist_t sgx_errlist[] =
   { SGX_INTERNAL_ERROR_ENCLAVE_CREATE_INTERRUPTED,"The ioctl for enclave_create unexpectedly failed with EINTR"                                                                                   }
 };
 
+
+static size_t get_file_size(const char *filename)
+{
+    std::ifstream ifs(filename, std::ios::in | std::ios::binary);
+    if (!ifs.good())
+    {
+        std::cout << "Failed to open the file \"" << filename << "\"" << std::endl;
+        return -1;
+    }
+    ifs.seekg(0, std::ios::end);
+    size_t size = (size_t)ifs.tellg();
+    return size;
+}
+
 void print_error_message(sgx_status_t ret,const char *sgx_function_name)
 {
   size_t ttl = sizeof(sgx_errlist) / sizeof(sgx_errlist[0]);
@@ -307,33 +321,34 @@ int send_card(std::string client_id){
         return false;
     }
     
-  if((ret = be_init_card(global_eid1,temp_sealed_buf,card_size)) != SGX_SUCCESS)
+  if((ret = be_init_card(global_eid1,temp_sealed_buf,card_size,temp_sealed_buf,sealed_len)) != SGX_SUCCESS)
   {
     print_error_message(ret,"be_init_card");
     return 1;
   }  
 
- 
-/* 
-  int* is_valid;
-  if((ret = be_validate(global_eid1,sealed_card,sealed_len,0,0, client_id_b, client_id.size(),is_valid)) != SGX_SUCCESS)
-  {
-    print_error_message(ret,"be_init_card");
-    return 1;
-  }   */
-/* 
-
-  printf("sealed_len: %ld\n",sealed_len);
-  printf("sealed data: %s\n",sealed_card);
- */
-  //write sealed card to binary file
-
-  // create binary file first
   printf("sss\n");
   FILE *file_ptr;
   file_ptr = fopen("test.bin","wb");  // r for read, b for binary
   fwrite(temp_sealed_buf,sizeof(temp_sealed_buf),sealed_len,file_ptr);
   fclose(file_ptr);
+  
+
+  // unsealing test
+  size_t sealed_size = get_file_size("test.bin");
+
+  if((ret = unseal_card(global_eid1,temp_sealed_buf, sealed_size)) != SGX_SUCCESS)
+  {
+    print_error_message(ret,"unseal_card");
+    return 1;
+  }   
+/* 
+
+  printf("sealed_len: %ld\n",sealed_len);
+  printf("sealed data: %s\n",sealed_card);
+ */
+
+
   return 0;
 }
 
