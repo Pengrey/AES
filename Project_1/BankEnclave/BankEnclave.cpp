@@ -35,6 +35,10 @@
 #include <cstdio>
 #include <math.h>
 
+#include "stdio.h"
+#include "string.h"
+#include "stdlib.h"
+
 #include "BankEnclave.h"
 #include "BankEnclave_t.h"  /* e1_print_string */
 
@@ -184,13 +188,42 @@ void be_get_seal_len(size_t* data_len, size_t* sealed_len) {
 
 
 // actually a test function
-void be_init_card(uint8_t *card,size_t card_size,  sgx_sealed_data_t* sealed_data, size_t sealed_len)
+sgx_status_t be_init_card(uint8_t *card,size_t card_size)
 {
-  printf("ENCLAVE IN\n");
-  // debug_print_card(card, card_size);
+ 
+  uint32_t sealed_data_size = sgx_calc_sealed_data_size(0, card_size); // CHANGE FOR ADDING MAC TEXT
+  if (sealed_data_size == UINT32_MAX)
+    return SGX_ERROR_UNEXPECTED;
+   
+  uint8_t *temp_sealed_buf = (uint8_t *)malloc(sealed_data_size);
+  if(temp_sealed_buf == NULL)
+      return SGX_ERROR_OUT_OF_MEMORY;
+  sgx_status_t  err = sgx_seal_data(0 , NULL, card_size, (uint8_t *)card, sealed_data_size, (sgx_sealed_data_t *)temp_sealed_buf);
+  if (err == SGX_SUCCESS)
+  {
+    // Copy the sealed data to outside buffer
+    memcpy(card, temp_sealed_buf, sealed_data_size);
+  }
 
-  seal_card(card, card_size,sealed_data, sealed_len);
-  printf("ENCLAVE OUT\n");
+  free(temp_sealed_buf);
+  /*
+   sgx_seal_data_ex(
+    SGX_KEYPOLICY_MRENCLAVE, 
+    attr_mask,   /*  Bitmask indicating which attributes the seal
+                     key should be bound to. The recommendation is to set all the
+                     attribute flags, except Mode 64 bit, Provision Key and Launch
+                     key, and none of the XFRM attributes */
+    /*0, 
+    0,
+    NULL, // TODO - CHANGE LATER
+    card_size,
+    card,
+    sealed_len,
+    sealed_data
+    );
+ */
+
+  return err;
 }
 
 

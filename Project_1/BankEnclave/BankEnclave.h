@@ -44,7 +44,7 @@ extern "C" {
 
 int printf(const char *fmt, ...);
 void e1_sum_array(int *ptr,size_t n,int *sum);
-void be_init_card(uint8_t* card, size_t n, sgx_sealed_data_t* sealed_data, size_t sealed_len);
+sgx_status_t be_init_card(uint8_t* card, size_t n);
 void be_get_seal_len(size_t* data_len, size_t* sealed_len);
 
 void be_validate(sgx_sealed_data_t* sealed_card, size_t sealed_len, int x, int y, uint8_t* client_id, size_t client_id_len, int* valid);

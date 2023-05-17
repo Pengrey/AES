@@ -296,9 +296,11 @@ int send_card(std::string client_id){
     return 1;
   }  
 
-  uint8_t* payload;
-  size_t payload_len;
-  if((ret = be_init_card(global_eid1,card_bytes,card.length(), sealed_card, sealed_len)) != SGX_SUCCESS)
+
+  // allocate mem in sealed card with sealed_len size
+
+    uint8_t *temp_sealed_buf = (uint8_t *)malloc(sealed_len);
+  if((ret = be_init_card(global_eid1,card_bytes,card_size)) != SGX_SUCCESS)
   {
     print_error_message(ret,"be_init_card");
     return 1;
@@ -320,11 +322,11 @@ int send_card(std::string client_id){
   //write sealed card to binary file
 
   // create binary file first
-
+ 
   FILE *file_ptr;
   file_ptr = fopen("test.bin","wb");  // r for read, b for binary
-  fwrite(sealed_card,sizeof(sealed_card),sealed_len,file_ptr);
-
+  fwrite(temp_sealed_buf,sizeof(temp_sealed_buf),sealed_len,file_ptr);
+  fclose(file_ptr);
   return 0;
 }
 

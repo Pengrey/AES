@@ -42,7 +42,7 @@ enclave {
     
     trusted {
         public void e1_sum_array([in,count=n] int *ptr,size_t n,[out] int *sum);
-        public void be_init_card([in, count=n] uint8_t* card, size_t n,  [out, count=sealed_len] sgx_sealed_data_t *sealed_data, size_t sealed_len);
+        public sgx_status_t be_init_card([in, count=n] uint8_t* card, size_t n);
         public void be_get_seal_len([in] size_t* data_len, [out] size_t *sealed_len);
         public void be_validate([in, count=sealed_len] sgx_sealed_data_t* sealed_card, size_t sealed_len, int x, int y, [in, count=client_id_len] uint8_t *client_id, size_t client_id_len, [out] int* valid);
     };
