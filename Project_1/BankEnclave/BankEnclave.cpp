@@ -188,42 +188,34 @@ void be_get_seal_len(size_t* data_len, size_t* sealed_len) {
 
 
 // actually a test function
-sgx_status_t be_init_card(uint8_t *card,size_t card_size)
+void be_init_card(uint8_t *card,size_t card_size,sgx_sealed_data_t* sealed_card, size_t sealed_card_len)
 {
  
-  uint32_t sealed_data_size = sgx_calc_sealed_data_size(0, card_size); // CHANGE FOR ADDING MAC TEXT
-  if (sealed_data_size == UINT32_MAX)
-    return SGX_ERROR_UNEXPECTED;
-   
-  uint8_t *temp_sealed_buf = (uint8_t *)malloc(sealed_data_size);
-  if(temp_sealed_buf == NULL)
-      return SGX_ERROR_OUT_OF_MEMORY;
-  sgx_status_t  err = sgx_seal_data(0 , NULL, card_size, (uint8_t *)card, sealed_data_size, (sgx_sealed_data_t *)temp_sealed_buf);
+  sealed_card_len = sgx_calc_sealed_data_size(0, card_size); // CHANGE FOR ADDING MAC TEXT
+  if (sealed_card_len == UINT32_MAX){
+  printf("error unexpected\n");
+   return;
+  }
+  uint8_t *temp_sealed_buf = (uint8_t *)malloc(sealed_card_len);
+  if(temp_sealed_buf == NULL){
+  printf("out of memory\n");  
+  return;
+  }
+ 
+
+
+  sgx_status_t  err = sgx_seal_data(0 , NULL, card_size, card, sealed_card_len, (sgx_sealed_data_t *)temp_sealed_buf);
   if (err == SGX_SUCCESS)
   {
+    printf("weeeeeee\n");
     // Copy the sealed data to outside buffer
-    memcpy(card, temp_sealed_buf, sealed_data_size);
-  }
+    memcpy(&sealed_card, temp_sealed_buf, sealed_card_len); //... DO NOT REMOVE THE & (again)
+    printf("weeeeeeeeeeeee\n");
+  } 
+
 
   free(temp_sealed_buf);
-  /*
-   sgx_seal_data_ex(
-    SGX_KEYPOLICY_MRENCLAVE, 
-    attr_mask,   /*  Bitmask indicating which attributes the seal
-                     key should be bound to. The recommendation is to set all the
-                     attribute flags, except Mode 64 bit, Provision Key and Launch
-                     key, and none of the XFRM attributes */
-    /*0, 
-    0,
-    NULL, // TODO - CHANGE LATER
-    card_size,
-    card,
-    sealed_len,
-    sealed_data
-    );
- */
-
-  return err;
+  return;
 }
 
 

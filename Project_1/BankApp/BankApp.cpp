@@ -299,8 +299,15 @@ int send_card(std::string client_id){
 
   // allocate mem in sealed card with sealed_len size
 
-    uint8_t *temp_sealed_buf = (uint8_t *)malloc(sealed_len);
-  if((ret = be_init_card(global_eid1,card_bytes,card_size)) != SGX_SUCCESS)
+  uint8_t *temp_sealed_buf = (uint8_t *)malloc(sealed_len);
+    if(temp_sealed_buf == NULL)
+    {
+        std::cout << "Out of memory" << std::endl;
+        sgx_destroy_enclave(global_eid1);
+        return false;
+    }
+    
+  if((ret = be_init_card(global_eid1,temp_sealed_buf,card_size)) != SGX_SUCCESS)
   {
     print_error_message(ret,"be_init_card");
     return 1;
@@ -322,7 +329,7 @@ int send_card(std::string client_id){
   //write sealed card to binary file
 
   // create binary file first
- 
+  printf("sss\n");
   FILE *file_ptr;
   file_ptr = fopen("test.bin","wb");  // r for read, b for binary
   fwrite(temp_sealed_buf,sizeof(temp_sealed_buf),sealed_len,file_ptr);
