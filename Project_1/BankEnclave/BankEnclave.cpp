@@ -35,6 +35,10 @@
 #include <cstdio>
 #include <math.h>
 
+#include "stdio.h"
+#include "string.h"
+#include "stdlib.h"
+
 #include "BankEnclave.h"
 #include "BankEnclave_t.h"  /* e1_print_string */
 
@@ -162,10 +166,49 @@ int validate_response(string card, int expected, char response){
 
  */
 
-void unseal_card(sgx_sealed_data_t* sealed_data, size_t sealed_size, uint8_t* plaintext, uint32_t plaintext_len) {
+void unseal_card(uint8_t* sealed_card, size_t sealed_size) {
+  printf("ENCLAVE IN\n");
+  
+printf("sealed_size: %ld\n", sealed_size);
+    //uint32_t mac_text_len = sgx_get_add_mac_txt_len((const sgx_sealed_data_t *)sealed_blob);
+  uint32_t mac_text_len=0;
+  uint32_t plaintext_len = sgx_get_encrypt_txt_len((const sgx_sealed_data_t *)sealed_card);
+  
+  printf("plaintext_len: %d\n", plaintext_len);
+  uint8_t *plaintext_card = (uint8_t *)malloc(plaintext_len);
+    if(plaintext_card == NULL)
+    {
+      printf("Out of memory\n");
+        return ;
+    }
 
+
+
+    sgx_status_t ret = sgx_unseal_data((const sgx_sealed_data_t *)sealed_card, NULL, 0, plaintext_card, &plaintext_len);
+    if (ret != SGX_SUCCESS)
+    {
+      printf("Unseal failed\n");
+       free(plaintext_card);
+        return ;
+    }
+
+/* 
+    if (memcmp(de_mac_text, aad_mac_text, strlen(aad_mac_text)) || memcmp(decrypt_data, encrypt_data, strlen(encrypt_data)))
+    {
+        ret = SGX_ERROR_UNEXPECTED;
+    }
+ */
+printf("%hhn",plaintext_card);
+    free(plaintext_card);
+
+    return ;
+
+ // unseal_card(sealed_card, sealed_len, plaintext_card, plaintext_len);
+  
+  printf("plaintext_len: %d\n", plaintext_len);
+  printf("plaintext_card: %s\n", plaintext_card);
+  printf("ENCLAVE OUT\n");
   printf("UNsealing card\n");
-  sgx_unseal_data(sealed_data, NULL, NULL, plaintext, &plaintext_len);
 }
 
 
@@ -184,13 +227,34 @@ void be_get_seal_len(size_t* data_len, size_t* sealed_len) {
 
 
 // actually a test function
-void be_init_card(uint8_t *card,size_t card_size,  sgx_sealed_data_t* sealed_data, size_t sealed_len)
+void be_init_card(uint8_t *card,size_t card_size,uint8_t* sealed_card, size_t sealed_card_len)
 {
-  printf("ENCLAVE IN\n");
-  // debug_print_card(card, card_size);
+ 
+  sealed_card_len = sgx_calc_sealed_data_size(0, card_size); // CHANGE FOR ADDING MAC TEXT
+  if (sealed_card_len == UINT32_MAX){
+  printf("error unexpected\n");
+   return;
+  }
+  uint8_t *temp_sealed_buf = (uint8_t *)malloc(sealed_card_len);
+  if(temp_sealed_buf == NULL){
+  printf("out of memory\n");  
+  return;
+  }
+ 
 
-  seal_card(card, card_size,sealed_data, sealed_len);
-  printf("ENCLAVE OUT\n");
+
+  sgx_status_t  err = sgx_seal_data(0 , NULL, card_size, card, sealed_card_len, (sgx_sealed_data_t *)temp_sealed_buf);
+  if (err == SGX_SUCCESS)
+  {
+    printf("weeeeeee\n");
+    // Copy the sealed data to outside buffer
+    memcpy(&sealed_card, temp_sealed_buf, sealed_card_len); //... DO NOT REMOVE THE & (again)
+    printf("weeeeeeeeeeeee\n");
+  } 
+
+
+  free(temp_sealed_buf);
+  return;
 }
 
 
@@ -199,16 +263,7 @@ void be_init_card(uint8_t *card,size_t card_size,  sgx_sealed_data_t* sealed_dat
  * ECALL (validate client request)
  */
 
-void be_validate(sgx_sealed_data_t* sealed_card, size_t sealed_len, int x, int y, uint8_t* client_id, size_t client_id_len, int* valid) {
-  // TODO actual validation, for now it's a unsealing test
-  printf("ENCLAVE IN\n");
-  
-  uint8_t* plaintext_card;
-  uint32_t plaintext_len;
-  
-  unseal_card(sealed_card, sealed_len, plaintext_card, plaintext_len);
-  
-  printf("plaintext_len: %d\n", plaintext_len);
-  printf("plaintext_card: %s\n", plaintext_card);
-  printf("ENCLAVE OUT\n");
+void be_validate( uint8_t* sealed_card, size_t sealed_len, int x, int y, uint8_t* client_id, size_t client_id_len, int* valid) {
+  //TODO
+  return;
 }
