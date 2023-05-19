@@ -1,13 +1,14 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
-#include <string>
 #include <cstdlib>
 #include <ctime>
 #include <utility>
 #include <random>
 #include <chrono>
 #include <algorithm>
+#include <iterator>
+#include <string>
 
 using namespace std;
 
@@ -58,10 +59,6 @@ int generate_card()
     return 0;
 }
 
-string init_card(string client_id){
-  return generate_card() + "\n" + client_id;
-}
-
 string parse_card() {
     ifstream fin("card.txt");
     // Ignore first line
@@ -91,6 +88,30 @@ pair<uint8_t*, int> string_to_uint8_t(string str){
     return make_pair(result, size);
 }
 
+
+int save_card(){
+    string card = parse_card();
+
+    // ID is requested to the user
+    string id;
+    cout << "Write your ID: ";
+    cin >> id;
+    
+    // Convert the card string + id string to uint8_t*
+    pair<uint8_t*, int> card_id = string_to_uint8_t(card + id);
+
+    // Enclave stuff
+
+    // Save the sealed card to a file
+    ofstream fout("sealed_card.txt");
+    for (int i = 0; i < card_id.second; i++) {
+        fout << card_id.first[i];
+    }
+    fout.close();
+
+    return 0;
+}
+
 int validate_response(uint8_t* card, int expected, char response){
     return(card[expected - 1] == response);
 }
@@ -110,12 +131,6 @@ int request_validation(pair<uint8_t*, int> card){
 
     // Get the human readable position
     int row = position / (SIZE_CARD * 3);
-    // The row label is of the type "A", ... "ZZZ", depending on the row number
-    // Given the row, its calculated the row label
-    // If the row is 1 then the row_label is "A"
-    // If the row is 2 then the row_label is "B"
-    // If the row is 27 then the row_label is "AA"
-    // If the row is 28 then the row_label is "AB"
 
     string row_label = "";
     while (row >= 0) {
@@ -142,11 +157,26 @@ int request_validation(pair<uint8_t*, int> card){
     return 0;
 }
 
+void validate(){
+    // Get the content of the sealed card
+    ifstream fin("sealed_card.txt");
+    string line;
+    getline(fin, line);
+    fin.close();
+
+    // Convert the string to uint8_t*
+    pair<uint8_t*, int> sealed_card = string_to_uint8_t(line);
+
+    // Request the validation
+    request_validation(sealed_card);
+}
+
 int menu(){
     int option;
     cout << "1. Generate card" << endl;
-    cout << "2. Validate" << endl;
-    cout << "3. Exit" << endl;
+    cout << "2. Parse card" << endl;
+    cout << "3. Validate card" << endl;
+    cout << "4. Exit" << endl;
     cout << "Option: ";
     cin >> option;
 
@@ -160,17 +190,18 @@ int menu(){
     switch (option) {
         case 1:
             cout << "Generating card..." << endl;
-            init_card("123");
+            generate_card();
             break;
         case 2:
             cout << "Parsing card..." << endl;
-            request_validation(string_to_uint8_t(parse_card()));
+            save_card();
             break;
         case 3:
-            cout << "Exiting..." << endl;
+            cout << "Validating card..." << endl;
+            validate();
             break;
-        default:
-            cout << "Invalid option" << endl;
+        case 4:
+            cout << "Exiting..." << endl;
             break;
     }
 
