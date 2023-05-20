@@ -176,11 +176,6 @@ void unseal_card( uint8_t *sealed_card, size_t sealed_size) {
   
   printf("plaintext_len: %d\n", plaintext_len);
   uint8_t *plaintext_card = (uint8_t *)malloc(plaintext_len);
-    if(plaintext_card == NULL)
-    {
-      printf("Out of memory\n");
-        return ;
-    }
 
 
 
@@ -192,9 +187,7 @@ void unseal_card( uint8_t *sealed_card, size_t sealed_size) {
       return ;
   }
 
-  printf("%hhn",plaintext_card);
-  free(plaintext_card);
-
+  printf("plaintext_card: %s\n", plaintext_card);
   return;
 
  // unseal_card(sealed_card, sealed_len, plaintext_card, plaintext_len);
