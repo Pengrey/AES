@@ -45,8 +45,7 @@ enclave {
         public void be_init_card([in, count=n] uint8_t* card, size_t n,  [out, count=sealed_card_len] uint8_t *sealed_data, size_t sealed_card_len);
         public void be_get_seal_len([in] size_t* data_len, [out] size_t *sealed_len);
         public void be_validate([in, count=sealed_len] uint8_t* sealed_card, size_t sealed_len, int x, int y, [in, count=client_id_len] uint8_t *client_id, size_t client_id_len, [out] int* valid);
-        
-        public void unseal_card([in, count=sealed_size] uint8_t* sealed_card, size_t sealed_size);
+        public void unseal_card([in, count=sealed_size]  uint8_t *sealed_card, size_t sealed_size);
     };
 
 

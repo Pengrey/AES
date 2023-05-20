@@ -49,7 +49,7 @@ void be_get_seal_len(size_t* data_len, size_t* sealed_len);
 
 void be_validate(uint8_t* sealed_card, size_t sealed_len, int x, int y, uint8_t* client_id, size_t client_id_len, int* valid);
 
-void unseal_card(uint8_t* sealed_data, size_t sealed_size) ;
+void unseal_card( uint8_t* sealed_data, size_t sealed_size);
 
 #if defined(__cplusplus)
 }

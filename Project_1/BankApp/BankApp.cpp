@@ -287,12 +287,10 @@ int send_card(std::string client_id){
   uint8_t* card_bytes = (uint8_t*) malloc(sizeof(uint8_t) * card.length());
   memcpy(card_bytes,card.c_str(),card.length());
 
-  // turn client_id into uints
-  uint8_t* client_id_b = (uint8_t*) malloc(sizeof(uint8_t) * client_id.length());
-  memcpy(client_id_b,client_id.c_str(),client_id.length());
-
 
   cout << "card_size: " << card.length() << endl;
+
+
   // send card to enclave
   sgx_status_t ret;
   sgx_sealed_data_t* sealed_card ;
@@ -321,33 +319,36 @@ int send_card(std::string client_id){
         return false;
     }
     
-  if((ret = be_init_card(global_eid1,temp_sealed_buf,card_size,temp_sealed_buf,sealed_len)) != SGX_SUCCESS)
+  if((ret = be_init_card(global_eid1,card_bytes,card_size,temp_sealed_buf,sealed_len)) != SGX_SUCCESS)
   {
     print_error_message(ret,"be_init_card");
     return 1;
   }  
 
-  printf("sss\n");
   FILE *file_ptr;
   file_ptr = fopen("test.bin","wb");  // r for read, b for binary
   fwrite(temp_sealed_buf,sizeof(temp_sealed_buf),sealed_len,file_ptr);
   fclose(file_ptr);
   
 
+  // test, must later be read from file
   // unsealing test
-  size_t sealed_size = get_file_size("test.bin");
 
-  if((ret = unseal_card(global_eid1,temp_sealed_buf, sealed_size)) != SGX_SUCCESS)
+
+
+  size_t sealed_size = get_file_size("test.bin");
+  // read test.bin into temp_buf
+  uint8_t *temp_buf = (uint8_t *)malloc(sealed_size);
+  file_ptr = fopen("test.bin","rb");  // r for read, b for binary
+  fread(temp_buf,sizeof(temp_buf),sealed_size,file_ptr);
+  fclose(file_ptr);
+  
+
+  if((ret = unseal_card(global_eid1,  temp_sealed_buf, sealed_size)) != SGX_SUCCESS)
   {
     print_error_message(ret,"unseal_card");
     return 1;
   }   
-/* 
-
-  printf("sealed_len: %ld\n",sealed_len);
-  printf("sealed data: %s\n",sealed_card);
- */
-
 
   return 0;
 }

@@ -166,11 +166,11 @@ int validate_response(string card, int expected, char response){
 
  */
 
-void unseal_card(uint8_t* sealed_card, size_t sealed_size) {
+void unseal_card( uint8_t *sealed_card, size_t sealed_size) {
   printf("ENCLAVE IN\n");
   
-printf("sealed_size: %ld\n", sealed_size);
-    //uint32_t mac_text_len = sgx_get_add_mac_txt_len((const sgx_sealed_data_t *)sealed_blob);
+  printf("sealed_size: %ld\n", sealed_size);
+  //uint32_t mac_text_len = sgx_get_add_mac_txt_len((const sgx_sealed_data_t *)sealed_blob);
   uint32_t mac_text_len=0;
   uint32_t plaintext_len = sgx_get_encrypt_txt_len((const sgx_sealed_data_t *)sealed_card);
   
@@ -184,24 +184,18 @@ printf("sealed_size: %ld\n", sealed_size);
 
 
 
-    sgx_status_t ret = sgx_unseal_data((const sgx_sealed_data_t *)sealed_card, NULL, 0, plaintext_card, &plaintext_len);
-    if (ret != SGX_SUCCESS)
-    {
-      printf("Unseal failed\n");
-       free(plaintext_card);
-        return ;
-    }
+  sgx_status_t ret = sgx_unseal_data((const sgx_sealed_data_t *)sealed_card, NULL, 0, plaintext_card, &plaintext_len);
+  if (ret != SGX_SUCCESS)
+  {
+    printf("Unseal failed\n");
+     free(plaintext_card);
+      return ;
+  }
 
-/* 
-    if (memcmp(de_mac_text, aad_mac_text, strlen(aad_mac_text)) || memcmp(decrypt_data, encrypt_data, strlen(encrypt_data)))
-    {
-        ret = SGX_ERROR_UNEXPECTED;
-    }
- */
-printf("%hhn",plaintext_card);
-    free(plaintext_card);
+  printf("%hhn",plaintext_card);
+  free(plaintext_card);
 
-    return ;
+  return;
 
  // unseal_card(sealed_card, sealed_len, plaintext_card, plaintext_len);
   
@@ -235,6 +229,7 @@ void be_init_card(uint8_t *card,size_t card_size,uint8_t* sealed_card, size_t se
   printf("error unexpected\n");
    return;
   }
+  printf("sealed_card_len: %ld\n", sealed_card_len);
   uint8_t *temp_sealed_buf = (uint8_t *)malloc(sealed_card_len);
   if(temp_sealed_buf == NULL){
   printf("out of memory\n");  
@@ -248,7 +243,7 @@ void be_init_card(uint8_t *card,size_t card_size,uint8_t* sealed_card, size_t se
   {
     printf("weeeeeee\n");
     // Copy the sealed data to outside buffer
-    memcpy(&sealed_card, temp_sealed_buf, sealed_card_len); //... DO NOT REMOVE THE & (again)
+    memcpy(sealed_card, temp_sealed_buf, sealed_card_len); //... DO NOT REMOVE THE & (again)
     printf("weeeeeeeeeeeee\n");
   } 
 
