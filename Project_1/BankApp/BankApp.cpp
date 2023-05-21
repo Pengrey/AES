@@ -39,7 +39,13 @@
 #include <cstdlib>
 #include <ctime>
 #include <sstream>
+#include <utility>
 
+#include <random>
+#include <chrono>
+#include <algorithm>
+#include <iterator>
+#include <string>
 using namespace std;
 
 #include "sgx_utils.h"
@@ -218,10 +224,10 @@ char ocall_be_get_response(int position)
 }
 
 
-string generate_card()                
-{   
-    stringstream result;
-    ofstream fout("card.txt");              // The numbers are stored in a file named "card.txt"
+int generate_card(string client_id)                
+{    std::string filename = client_id + ".txt";
+
+    ofstream fout(filename);              // The numbers are stored in a file named "card.txt"
     srand(time(NULL));
 
     // first row
@@ -250,8 +256,6 @@ string generate_card()
         {
             int num = rand() % 999 + 1;     // The range of the numbers are from the range 001 to 999
 
-            result << num;                  // Add the number to the result string
-
             if (num < 100)                  // The number is padded with zeros to make it 3 digits
                 fout << "0";
             if (num < 10) 
@@ -263,11 +267,35 @@ string generate_card()
         fout << endl;                       // The numbers are separated by a new line
     }
     fout.close();
-    return result.str();
+    return 0;
 }
 
+string parse_card(string client_id) {
+    std::string filename = client_id + ".txt";
+
+    ifstream fin(filename);
+    // Ignore first line
+    string line;
+    getline(fin, line);
+
+    // Read the rest of the file and ignore first 3 characters of each line
+    string result;
+    while (getline(fin, line)) {
+        // Remove the first 3 characters
+        line.erase(0, 3);
+        // Remove white spaces from the line
+        line.erase(remove(line.begin(), line.end(), ' '), line.end());
+        // Add the line to the result string
+        result += line;
+    }
+    fin.close();
+    return result+"\n"+client_id;
+}
+
+
 string init_card(string client_id){
-  return generate_card() + "\n" + client_id;
+  generate_card(client_id); 
+  return parse_card(client_id);
 }
 
 
@@ -284,8 +312,10 @@ int init_client(std::string client_id){
   /* 
   printf("-----card---------\n");
   cout << card << endl;
-  printf("--------------\n\n"); */
+  printf("--------------\n\n"); 
+ */
 
+ 
   // turn card into uint8_t array
   uint8_t* card_bytes = (uint8_t*) malloc(sizeof(uint8_t) * card.length());
   memcpy(card_bytes,card.c_str(),card.length());
@@ -345,13 +375,14 @@ void do_validation(string client_id){
 
   uint8_t pos = NULL;
   uint8_t* pos_p = &pos;
+  std::string filename = client_id + ".bin";
 
-  size_t sealed_size = get_file_size("test.bin");
+  size_t sealed_size = get_file_size(filename.c_str());
   uint8_t *sealed_card = (uint8_t *)malloc(sealed_size);
 
   FILE *file_ptr;
 
-  file_ptr = fopen("test.bin","rb");  // r for read, b for binary
+  file_ptr = fopen(filename.c_str(),"rb");  // r for read, b for binary
   fread(sealed_card,sizeof(sealed_card),sealed_size,file_ptr);
   fclose(file_ptr); 
 

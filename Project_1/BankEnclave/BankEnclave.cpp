@@ -239,7 +239,16 @@ void be_validate( uint8_t *sealed_card, size_t sealed_size, uint8_t* client_id, 
   uint32_t card_size = sgx_get_encrypt_txt_len((const sgx_sealed_data_t *)sealed_card);
   uint8_t* plaintext_card = unseal_card(sealed_card, sealed_size);
   
+  printf("E: plaintext_card: %s\n", plaintext_card);
+
+  // get fifth element of char array plaintext_card thru pointer arithmetic
 
 
-  //return (card[expected - 1] == response);
+
+
+
+
+
+  int result = (*(plaintext_card+*position)== response);
+  printf("E: result: %d\n", result);
 }
