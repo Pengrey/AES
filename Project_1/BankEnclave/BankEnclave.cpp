@@ -205,7 +205,7 @@ void be_init_card(uint8_t *card,size_t card_size,uint8_t* sealed_card, size_t se
   return;
 }
 
-void be_get_pos(int* pos){
+int get_pos(){
    // Generate a secure random number between 0 and card_size
     std::random_device rd;
     std::default_random_engine engine(rd());
@@ -216,15 +216,26 @@ void be_get_pos(int* pos){
 
     // Generate the random number between min and max
     std::uniform_int_distribution<int> dist(min, max);
-    int position = dist(engine);
-    *pos = position;
+    return dist(engine);
 }
 
 /*
  * ECALL (validate client request)
  */
 
-void be_validate( uint8_t *sealed_card, size_t sealed_size, int pos, uint8_t* client_id, size_t client_id_len, int* valid) {
+void be_validate( uint8_t *sealed_card, size_t sealed_size, uint8_t* client_id, size_t client_id_len, int* valid) {
+  
+  int pos = get_pos();
+  int* position = &pos;
+  char response = '0';
+  char* response_p = &response;
+
+  char res = ocall_be_get_response(response_p, pos);
+
+  printf("E response: %c\n", response);
+  printf("E pos: %d\n", pos);
+
+
   uint32_t card_size = sgx_get_encrypt_txt_len((const sgx_sealed_data_t *)sealed_card);
   uint8_t* plaintext_card = unseal_card(sealed_card, sealed_size);
   

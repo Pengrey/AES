@@ -193,7 +193,29 @@ void ocall_e1_print_string(const char *str)
   printf("%s",str);
 }
 
+char ocall_be_get_response(int position)
+{
+  printf("App: position %d\n",position);
+  int row = position / (SIZE_CARD * 3);
 
+ string row_label = "";
+  while (row >= 0) {
+      row_label = (char)(row % 26 + 65) + row_label;
+      row /= 26;
+      row--;
+  }
+
+  int col = (position % (SIZE_CARD * 3)) / 3;
+  int letter = (position % (SIZE_CARD * 3)) % 3;
+
+  // Ask the user to write the number for the given position
+  cout << "Write the number for the position " << row_label << "-" << col + 1 << "-" << letter + 1 << ": ";
+  char number;
+  cin >> number; // will only get one char, as intended!
+  printf("selected number : %c\n",number);
+
+  return number; 
+}
 
 
 string generate_card()                
@@ -321,25 +343,34 @@ int init_client(std::string client_id){
 void do_validation(string client_id){
   sgx_status_t ret;
 
-  int pos = NULL;
-  int* pos_p = &pos;
+  uint8_t pos = NULL;
+  uint8_t* pos_p = &pos;
 
-  if((ret = be_get_pos(global_eid1,  pos_p)) != SGX_SUCCESS)
+  size_t sealed_size = get_file_size("test.bin");
+  uint8_t *sealed_card = (uint8_t *)malloc(sealed_size);
+
+  FILE *file_ptr;
+
+  file_ptr = fopen("test.bin","rb");  // r for read, b for binary
+  fread(sealed_card,sizeof(sealed_card),sealed_size,file_ptr);
+  fclose(file_ptr); 
+
+  int* is_valid;
+  if((ret = be_validate(global_eid1,  
+    sealed_card, 
+    sealed_size,
+    (uint8_t*) client_id.c_str(),
+    (size_t)client_id.length(),
+    is_valid
+    )) != SGX_SUCCESS)
   {
     print_error_message(ret,"be_get_pos");
   }   
 
-  printf("pos: %d\n",pos);
    
 
-  int x,y;
-  printf("Enter Coordinate #1: ");
-  scanf("%d",&x);
-  printf("Enter Coordinate #2: ");
-  scanf("%d",&y);
-
-  // enclave stuff to validate card?
-
+  // demo unseal
+/* 
   size_t sealed_size = get_file_size("test.bin");
   uint8_t *temp_buf = (uint8_t *)malloc(sealed_size);
 
@@ -347,7 +378,7 @@ void do_validation(string client_id){
 
   file_ptr = fopen("test.bin","rb");  // r for read, b for binary
   fread(temp_buf,sizeof(temp_buf),sealed_size,file_ptr);
-  fclose(file_ptr);
+  fclose(file_ptr); */
   
 /* 
   if((ret = unseal_card(global_eid1,  temp_sealed_buf, sealed_size)) != SGX_SUCCESS)
