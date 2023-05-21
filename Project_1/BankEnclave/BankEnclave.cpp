@@ -34,6 +34,7 @@
 #include <stdio.h>      /* vsnprintf */
 #include <cstdio>
 #include <math.h>
+#include <random>
 
 #include "stdio.h"
 #include "string.h"
@@ -41,6 +42,7 @@
 
 #include "BankEnclave.h"
 #include "BankEnclave_t.h"  /* e1_print_string */
+#define SIZE_CARD 8
 
 /* 
  * printf: 
@@ -60,34 +62,6 @@ int printf(const char *fmt, ...)
 
 
 
-
-/*
- * ECALL (sum the elements of the array)
- */
-
-void e1_sum_array(int *ptr,size_t n,int *sum)
-{
-  int s = 0;
-
-  for(size_t i = 0;i < n;i++)
-    s += ptr[i];
-  *sum = s;
-}
-
-/*
- * ECALL (DEBUG print the elements of the array)
- */
-void debug_print_card(uint8_t *card, size_t n)
-{
-
-  int card_size = (sizeof(card) / sizeof(card[0]));
-   printf("-----card_bytes---------\n");
-  for(int i = 0;i < n;i++){
-    printf("%c",card[i]);
-  }
-  printf("\n--------------\n\n");
-return;
-}
 
 
 
@@ -166,37 +140,25 @@ int validate_response(string card, int expected, char response){
 
  */
 
-void unseal_card( uint8_t *sealed_card, size_t sealed_size) {
-  printf("ENCLAVE IN\n");
-  
-  printf("sealed_size: %ld\n", sealed_size);
+uint8_t* unseal_card( uint8_t *sealed_card, size_t sealed_size) {
   //uint32_t mac_text_len = sgx_get_add_mac_txt_len((const sgx_sealed_data_t *)sealed_blob);
   uint32_t mac_text_len=0;
   uint32_t plaintext_len = sgx_get_encrypt_txt_len((const sgx_sealed_data_t *)sealed_card);
   
-  printf("plaintext_len: %d\n", plaintext_len);
   uint8_t *plaintext_card = (uint8_t *)malloc(plaintext_len);
-
 
 
   sgx_status_t ret = sgx_unseal_data((const sgx_sealed_data_t *)sealed_card, NULL, 0, plaintext_card, &plaintext_len);
   if (ret != SGX_SUCCESS)
   {
     printf("Unseal failed\n");
-     free(plaintext_card);
-      return ;
+    free(plaintext_card);
+    return (uint8_t *)"";
   }
 
-  printf("plaintext_card: %s\n", plaintext_card);
-  return;
-
- // unseal_card(sealed_card, sealed_len, plaintext_card, plaintext_len);
-  
-  printf("plaintext_len: %d\n", plaintext_len);
-  printf("plaintext_card: %s\n", plaintext_card);
-  printf("ENCLAVE OUT\n");
-  printf("UNsealing card\n");
+  return plaintext_card;
 }
+
 
 
 /*
@@ -234,10 +196,8 @@ void be_init_card(uint8_t *card,size_t card_size,uint8_t* sealed_card, size_t se
   sgx_status_t  err = sgx_seal_data(0 , NULL, card_size, card, sealed_card_len, (sgx_sealed_data_t *)temp_sealed_buf);
   if (err == SGX_SUCCESS)
   {
-    printf("weeeeeee\n");
     // Copy the sealed data to outside buffer
     memcpy(sealed_card, temp_sealed_buf, sealed_card_len); //... DO NOT REMOVE THE & (again)
-    printf("weeeeeeeeeeeee\n");
   } 
 
 
@@ -245,13 +205,30 @@ void be_init_card(uint8_t *card,size_t card_size,uint8_t* sealed_card, size_t se
   return;
 }
 
+void be_get_pos(int* pos){
+   // Generate a secure random number between 0 and card_size
+    std::random_device rd;
+    std::default_random_engine engine(rd());
 
+    // Define the range of the random number
+    int min = 0;
+    int max = SIZE_CARD * SIZE_CARD * 3;
+
+    // Generate the random number between min and max
+    std::uniform_int_distribution<int> dist(min, max);
+    int position = dist(engine);
+    *pos = position;
+}
 
 /*
  * ECALL (validate client request)
  */
 
-void be_validate( uint8_t* sealed_card, size_t sealed_len, int x, int y, uint8_t* client_id, size_t client_id_len, int* valid) {
-  //TODO
-  return;
+void be_validate( uint8_t *sealed_card, size_t sealed_size, int pos, uint8_t* client_id, size_t client_id_len, int* valid) {
+  uint32_t card_size = sgx_get_encrypt_txt_len((const sgx_sealed_data_t *)sealed_card);
+  uint8_t* plaintext_card = unseal_card(sealed_card, sealed_size);
+  
+
+
+  //return (card[expected - 1] == response);
 }

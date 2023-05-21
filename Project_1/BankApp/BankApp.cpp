@@ -250,45 +250,25 @@ string init_card(string client_id){
 
 
 
-//TODO
-void do_validation(){
-    int x,y;
-    printf("Enter Coordinate #1: ");
-    scanf("%d",&x);
-    printf("Enter Coordinate #2: ");
-    scanf("%d",&y);
-
-    // enclave stuff to validate card?
 
 
-}
 
-
-int show_menu(){
-  int choice;
-  printf("1. Create Card (Init)\n");
-  printf("2. Validate Auth\n");
-  printf("Enter your choice: ");
-  scanf("%d",&choice);
-
-  return choice;
-}
-
-int send_card(std::string client_id){
+int init_client(std::string client_id){
 
   std::string card = init_card(client_id);
 
   //debug
+  /* 
   printf("-----card---------\n");
   cout << card << endl;
-  printf("--------------\n\n");
+  printf("--------------\n\n"); */
 
   // turn card into uint8_t array
   uint8_t* card_bytes = (uint8_t*) malloc(sizeof(uint8_t) * card.length());
   memcpy(card_bytes,card.c_str(),card.length());
 
 
-  cout << "card_size: " << card.length() << endl;
+  // cout << "card_size: " << card.length() << endl;
 
 
   // send card to enclave
@@ -326,19 +306,45 @@ int send_card(std::string client_id){
   }  
 
   FILE *file_ptr;
-  file_ptr = fopen("test.bin","wb");  // r for read, b for binary
+  std::string filename = client_id + ".bin";
+  file_ptr = fopen(filename.c_str(),"wb");  // r for read, b for binary
   fwrite(temp_sealed_buf,sizeof(temp_sealed_buf),sealed_len,file_ptr);
   fclose(file_ptr);
   
+  return 0;
+}
 
-  // test, must later be read from file
-  // unsealing test
 
 
+
+//TODO
+void do_validation(string client_id){
+  sgx_status_t ret;
+
+  int pos = NULL;
+  int* pos_p = &pos;
+
+  if((ret = be_get_pos(global_eid1,  pos_p)) != SGX_SUCCESS)
+  {
+    print_error_message(ret,"be_get_pos");
+  }   
+
+  printf("pos: %d\n",pos);
+   
+
+  int x,y;
+  printf("Enter Coordinate #1: ");
+  scanf("%d",&x);
+  printf("Enter Coordinate #2: ");
+  scanf("%d",&y);
+
+  // enclave stuff to validate card?
 
   size_t sealed_size = get_file_size("test.bin");
-  // read test.bin into temp_buf
   uint8_t *temp_buf = (uint8_t *)malloc(sealed_size);
+
+  FILE *file_ptr;
+
   file_ptr = fopen("test.bin","rb");  // r for read, b for binary
   fread(temp_buf,sizeof(temp_buf),sealed_size,file_ptr);
   fclose(file_ptr);
@@ -348,11 +354,49 @@ int send_card(std::string client_id){
   {
     print_error_message(ret,"unseal_card");
     return 1;
-  }   
+  }    
 
-  return 0;
+
 }
 
+
+int menu(string client_id){
+    int option;
+    cout << "What do you want to do?" << endl;
+    cout << "1. Generate new card" << endl;
+    cout << "2. Parse card" << endl;
+    cout << "3. Validate card" << endl;
+    cout << "4. Exit" << endl;
+    cout << "Option: ";
+    cin >> option;
+
+    // Check if the option is valid
+    while (option < 1 || option > 4) {
+        cout << "Invalid option. Try again: ";
+        cin >> option;
+    }
+
+    // For each option, call the corresponding function
+    switch (option) {
+        case 1:
+            cout << "Generating card..." << endl;
+            init_client(client_id);
+            break;
+        case 2:
+            cout << "Parsing card..." << endl;
+            //save_card();
+            break;
+        case 3:
+            cout << "Validating card..." << endl;
+            do_validation(client_id);
+            break;
+        case 4:
+            cout << "Exiting..." << endl;
+            return 1;
+    }
+
+    return 0;
+}
 /*
  * Application entry
  */
@@ -374,25 +418,15 @@ int SGX_CDECL main(int argc,char *argv[])
     return 1; 
 
   // our code goes here
-  int** card;
-  int choice = show_menu();
-  switch (choice)
-  {
-  case 1:
-  {
-    printf("Enter Client ID: ");
-    std::string client_id;
-    cin.ignore();
-    std::getline(cin, client_id);
-    send_card(client_id);
-    break;
+
+  // ""Login""
+  string client_id;
+
+  while (client_id == "") {
+  printf("Enter Client ID: \n");
+  getline(cin, client_id);
   }
-  case 2:
-  {
-    //do_validation();
-    break;
-  }
-  }
+  while (menu(client_id)!=1){}
 
 
   /* destroy the enclave */
