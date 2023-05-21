@@ -252,7 +252,8 @@ string init_card(string client_id){
 
 
 
-
+// Creates a card for the client, sends it to the enclave to be sealed
+// and saves it to .bin file
 int init_client(std::string client_id){
 
   std::string card = init_card(client_id);
@@ -277,7 +278,6 @@ int init_client(std::string client_id){
   //uint32_t sealed_size = sgx_calc_sealed_data_size(0,card.length());
   size_t sealed_len ;
   size_t* sealed_len_p = &sealed_len;
-
   size_t card_size = card.length();
   size_t* card_size_p = &card_size;
 
@@ -349,12 +349,12 @@ void do_validation(string client_id){
   fread(temp_buf,sizeof(temp_buf),sealed_size,file_ptr);
   fclose(file_ptr);
   
-
+/* 
   if((ret = unseal_card(global_eid1,  temp_sealed_buf, sealed_size)) != SGX_SUCCESS)
   {
     print_error_message(ret,"unseal_card");
     return 1;
-  }    
+  }     */
 
 
 }
@@ -392,10 +392,10 @@ int menu(string client_id){
             break;
         case 4:
             cout << "Exiting..." << endl;
-            return 1;
+            return 0;
     }
 
-    return 0;
+    return 1;
 }
 /*
  * Application entry
@@ -426,7 +426,7 @@ int SGX_CDECL main(int argc,char *argv[])
   printf("Enter Client ID: \n");
   getline(cin, client_id);
   }
-  while (menu(client_id)!=1){}
+  while (menu(client_id)){}
 
 
   /* destroy the enclave */
