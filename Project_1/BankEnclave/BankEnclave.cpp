@@ -141,11 +141,13 @@ int validate_response(string card, int expected, char response){
 
  */
 
-uint8_t* unseal_card( uint8_t *sealed_card, size_t sealed_size) {
+uint8_t* unseal_card(uint8_t *sealed_card, size_t sealed_size) {
   //uint32_t mac_text_len = sgx_get_add_mac_txt_len((const sgx_sealed_data_t *)sealed_blob);
   uint32_t mac_text_len=0;
+
   uint32_t plaintext_len = sgx_get_encrypt_txt_len((const sgx_sealed_data_t *)sealed_card);
-  
+  printf("plaintext_len: %d\n", plaintext_len);
+
   uint8_t *plaintext_card = (uint8_t *)malloc(plaintext_len);
 
 
@@ -199,30 +201,30 @@ void be_init_card(uint8_t *card,size_t card_size,uint8_t* sealed_card, size_t se
   int ts;
   ocall_be_get_ts(&ts);
   
-  sealed_card_len = sgx_calc_sealed_data_size(0, card_size); // CHANGE FOR ADDING MAC TEXT
+ 
+  printf("card size: %d\n", card_size);
+  append_to_card_log(&card, &card_size, "Card created.", 12);
+  printf("after logging card size: %d\n", card_size);
+
+ sealed_card_len = sgx_calc_sealed_data_size(0, card_size); // CHANGE FOR ADDING MAC TEXT
   if (sealed_card_len == UINT32_MAX){
     printf("error unexpected\n");
    return;
   }
 
+  printf("sealed_card_len: %d\n", sealed_card_len);
   uint8_t *temp_sealed_buf = (uint8_t *)malloc(sealed_card_len);
   if(temp_sealed_buf == NULL){
     printf("out of memory\n");  
     return;
   }
-  printf("card size: %d\n", card_size);
-  printf("card: %s\n", card);
-  append_to_card_log(&card, &card_size, "Card created.", 12);
-  printf("card size: %d\n", card_size);
-  printf("card: %s\n", card);
 
   sgx_status_t  err = sgx_seal_data(0 , NULL, card_size, card, sealed_card_len, (sgx_sealed_data_t *)temp_sealed_buf);
   if (err == SGX_SUCCESS)
   {
     // Copy the sealed data to outside buffer
-    memcpy(sealed_card, temp_sealed_buf, sealed_card_len); //... DO NOT REMOVE THE & (again)
+    memcpy(&sealed_card, temp_sealed_buf, sealed_card_len); //... DO **NOT** REMOVE THE & (again) (it's on the first arg)
   } 
-  free(temp_sealed_buf);
   return;
 }
 
@@ -246,8 +248,8 @@ int get_pos(){
  * ECALL (validate client request)
  */
 
-void be_validate( uint8_t *sealed_card, size_t sealed_size, uint8_t* client_id, size_t client_id_len, int* valid) {
-  
+void be_validate( uint8_t* sealed_card, size_t sealed_size, uint8_t* client_id, size_t client_id_len, int* valid) {
+
   int pos = get_pos();
   int* position = &pos;
   char response = '0';
@@ -255,20 +257,21 @@ void be_validate( uint8_t *sealed_card, size_t sealed_size, uint8_t* client_id, 
 
   char res = ocall_be_get_response(response_p, pos);
 
-  printf("E response: %c\n", response);
-  printf("E pos: %d\n", pos);
-
-
+  printf("sealed size %d\n",sealed_size);
+  printf("sealed card %s\n",sealed_card);
   uint32_t card_size = sgx_get_encrypt_txt_len((const sgx_sealed_data_t *)sealed_card);
+  printf("E: card_size: %d\n", card_size);
+
   uint8_t* plaintext_card = unseal_card(sealed_card, sealed_size);
   
   printf("E: plaintext_card: %s\n", plaintext_card);
 
   // get fifth element of char array plaintext_card thru pointer arithmetic
-
-
-
-
+  append_to_card_log(&plaintext_card,(size_t*) &card_size, "Card Validation Requested.", 15);
+  std::string message = "Expected Value: " + std::to_string(*position)
+                     + " Received Value: " + std::to_string(response);
+  append_to_card_log(&plaintext_card, (size_t*)&card_size, (char*)message.c_str(), message.size());
+  
 
 
 

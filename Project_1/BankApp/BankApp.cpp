@@ -153,6 +153,7 @@ static size_t get_file_size(const char *filename)
     }
     ifs.seekg(0, std::ios::end);
     size_t size = (size_t)ifs.tellg();
+    ifs.close();
     return size;
 }
 
@@ -383,15 +384,27 @@ void do_validation(string client_id){
   std::string filename = client_id + ".bin";
 
   size_t sealed_size = get_file_size(filename.c_str());
-  uint8_t *sealed_card = (uint8_t *)malloc(sealed_size);
+  printf("APP sealed_size: %d\n",sealed_size);
+
+  uint8_t* sealed_card = (uint8_t*) malloc(sizeof(uint8_t) * sealed_size);
+
 
   FILE *file_ptr;
-
   file_ptr = fopen(filename.c_str(),"rb");  // r for read, b for binary
-  fread(sealed_card,sizeof(sealed_card),sealed_size,file_ptr);
-  fclose(file_ptr); 
+  size_t val_bytes=fread(sealed_card,sizeof(uint8_t),sealed_size,file_ptr);
+  fclose(file_ptr);
+  printf("val_bytes: %d\n",val_bytes);
+  if (val_bytes!=sealed_size){
+    printf("Error reading file\n");
+    return;
+  }
+  printf("sealed_card: %s\n",*sealed_card);
+
+  
 
   int* is_valid;
+
+
   if((ret = be_validate(global_eid1,  
     sealed_card, 
     sealed_size,
@@ -400,7 +413,7 @@ void do_validation(string client_id){
     is_valid
     )) != SGX_SUCCESS)
   {
-    print_error_message(ret,"be_get_pos");
+    print_error_message(ret,"be_validate");
   }   
 
    
