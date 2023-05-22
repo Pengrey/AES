@@ -63,7 +63,7 @@ int printf(const char *fmt, ...)
 
 
 
-
+/* 
 
 // https://github.com/intel/linux-sgx/blob/master/common/inc/sgx_tseal.h
 void seal_card(uint8_t* data, size_t data_len, sgx_sealed_data_t* sealed_data, size_t sealed_len) {
@@ -71,7 +71,7 @@ void seal_card(uint8_t* data, size_t data_len, sgx_sealed_data_t* sealed_data, s
   printf("data_len: %ld\n", data_len);
   printf("data: %s\n", data);
   printf("sealed_len: %ld\n", sealed_len);
-  printf("Sealed_data: %s\n", sealed_data);
+  printf("Sealed_data: %s\n", sealed_data); */
 /* 
   sgx_seal_data(
               0,          // mac len 
@@ -82,37 +82,38 @@ void seal_card(uint8_t* data, size_t data_len, sgx_sealed_data_t* sealed_data, s
               sealed_data // sealed card
               );
  */
+/*  
   sgx_attributes_t attr_mask;
   attr_mask.flags = SGX_FLAGS_INITTED | SGX_FLAGS_DEBUG | SGX_FLAGS_KSS;
   attr_mask.flags &= ~SGX_FLAGS_MODE64BIT;
   attr_mask.flags &= ~(SGX_FLAGS_PROVISION_KEY | SGX_FLAGS_EINITTOKEN_KEY);
   attr_mask.xfrm = 0; 
-
+ *//* 
   sgx_seal_data_ex(
     SGX_KEYPOLICY_MRENCLAVE, 
-    attr_mask,   /*  Bitmask indicating which attributes the seal
+    attr_mask,  */  /*  Bitmask indicating which attributes the seal
                      key should be bound to. The recommendation is to set all the
                      attribute flags, except Mode 64 bit, Provision Key and Launch
                      key, and none of the XFRM attributes */
-    0, 
+  /*   0, 
     0,
     NULL, // TODO - CHANGE LATER
     data_len,
     data,
     sealed_len,
     sealed_data
-    );
-
+    ); */
+/* 
 
   printf("Sealed\n\n");
   printf("-------------------\n");
-  printf("sealed_len: %ld\n", sealed_len);
+  printf("sealed_len: %ld\n", sealed_len); */
   /* sgx_aes_gcm_data_t aes_data = sealed_data->aes_data;
   uint8_t* payload = aes_data.payload;
 
   
   printf("Sealed_data payload: %d\n",  payload); */
-
+/* 
   uint8_t* tag = sealed_data->aes_data.payload;
   printf("Sealed_data tag: %d\n",  tag);
   printf("-------------------\n");
@@ -130,7 +131,7 @@ void seal_card(uint8_t* data, size_t data_len, sgx_sealed_data_t* sealed_data, s
   printf("-------------------\n");
 
 
-}
+} */
 
 /* 
 
@@ -169,29 +170,51 @@ void be_get_seal_len(size_t* data_len, size_t* sealed_len) {
 }
 
 
+void append_to_card_log(uint8_t** card, size_t* card_size, char* message,int message_size){
+  int ts;
+  ocall_be_get_ts(&ts);
+  std::string log_message = (std::to_string(ts) + std::string(" -- ")+std::string(message)+"\n") ;
+  int log_message_size = log_message.size();
+
+  int new_card_size = *card_size + log_message_size;
+  uint8_t* new_card = (uint8_t *)malloc(new_card_size);
+
+  memcpy(new_card, *card, *card_size);
+  memcpy(new_card + *card_size, (uint8_t*)log_message.c_str(), log_message_size);
+
+  *card_size = new_card_size;
+
+  *card = new_card;
+}
 
 /*
  * ECALL (get plaintext card)
  */
 
-
-// actually a test function
+// First Card Seal
+// Plaintext in, Sealed out
+// Created Log
 void be_init_card(uint8_t *card,size_t card_size,uint8_t* sealed_card, size_t sealed_card_len)
 {
- 
+  int ts;
+  ocall_be_get_ts(&ts);
+  
   sealed_card_len = sgx_calc_sealed_data_size(0, card_size); // CHANGE FOR ADDING MAC TEXT
   if (sealed_card_len == UINT32_MAX){
-  printf("error unexpected\n");
+    printf("error unexpected\n");
    return;
   }
-  printf("sealed_card_len: %ld\n", sealed_card_len);
+
   uint8_t *temp_sealed_buf = (uint8_t *)malloc(sealed_card_len);
   if(temp_sealed_buf == NULL){
-  printf("out of memory\n");  
-  return;
+    printf("out of memory\n");  
+    return;
   }
- 
-
+  printf("card size: %d\n", card_size);
+  printf("card: %s\n", card);
+  append_to_card_log(&card, &card_size, "Card created.", 12);
+  printf("card size: %d\n", card_size);
+  printf("card: %s\n", card);
 
   sgx_status_t  err = sgx_seal_data(0 , NULL, card_size, card, sealed_card_len, (sgx_sealed_data_t *)temp_sealed_buf);
   if (err == SGX_SUCCESS)
@@ -199,11 +222,11 @@ void be_init_card(uint8_t *card,size_t card_size,uint8_t* sealed_card, size_t se
     // Copy the sealed data to outside buffer
     memcpy(sealed_card, temp_sealed_buf, sealed_card_len); //... DO NOT REMOVE THE & (again)
   } 
-
-
   free(temp_sealed_buf);
   return;
 }
+
+
 
 int get_pos(){
    // Generate a secure random number between 0 and card_size
@@ -249,6 +272,6 @@ void be_validate( uint8_t *sealed_card, size_t sealed_size, uint8_t* client_id, 
 
 
 
-  int result = (*(plaintext_card+*position)== response);
+  int result = (*(plaintext_card+*position) == response);
   printf("E: result: %d\n", result);
 }

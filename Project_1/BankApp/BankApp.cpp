@@ -224,6 +224,11 @@ char ocall_be_get_response(int position)
 }
 
 
+int ocall_be_get_ts()
+{
+  return time(NULL);
+}
+
 int generate_card(string client_id)                
 {    std::string filename = client_id + ".txt";
 

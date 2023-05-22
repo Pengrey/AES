@@ -56,6 +56,7 @@ enclave {
     untrusted {
         void ocall_e1_print_string([in, string] const char *str);
         char ocall_be_get_response(int pos);
+        int ocall_be_get_ts();
     };
 
 };
