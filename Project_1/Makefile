@@ -253,3 +253,5 @@ $(Signed_BankEnclave_Name): $(BankEnclave_Name) $(BankEnclave_Config_File)
 
 clean:
 	@rm -f .config_* $(App_Name) $(BankEnclave_Name) $(Signed_BankEnclave_Name) $(App_Cpp_Objects) BankApp/BankEnclave_u.* $(BankEnclave_Cpp_Objects) BankEnclave/BankEnclave_t.* a.out
+	@rm -f *.txt
+	@rm -f *.bin
