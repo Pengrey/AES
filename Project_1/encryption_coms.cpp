@@ -116,8 +116,11 @@ int encrypt_msg(char* shared_secret_str, char* msg, unsigned char** ciphertext, 
     // Encrypt the message using AES-GCM
     EVP_CIPHER_CTX* ctx = EVP_CIPHER_CTX_new();
     EVP_EncryptInit_ex(ctx, EVP_aes_256_gcm(), NULL, NULL, NULL);
-    EVP_EncryptUpdate(ctx, *ciphertext, (int*)&msg_len, (unsigned char*)msg, (int)msg_len);
-    EVP_EncryptFinal_ex(ctx, *ciphertext + msg_len, (int*)ciphertext_len);
+    EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_GCM_SET_IVLEN, 12, NULL); // Set the IV length to 12 bytes (96 bits)
+    EVP_EncryptInit_ex(ctx, NULL, NULL, shared_secret_bytes, NULL); // Use shared secret as the key
+    EVP_EncryptUpdate(ctx, *ciphertext, (int*)ciphertext_len, (unsigned char*)msg, (int)msg_len);
+    EVP_EncryptFinal_ex(ctx, *ciphertext + *ciphertext_len, (int*)&msg_len); // Update ciphertext_len with the actual length of the encrypted ciphertext
+    EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_GCM_GET_TAG, 16, (*ciphertext + *ciphertext_len)); // Get the authentication tag
     EVP_CIPHER_CTX_free(ctx);
 
     // Free the memory allocated
@@ -143,8 +146,11 @@ int decrypt_msg(char* shared_secret_str, unsigned char* ciphertext, size_t ciphe
     // Decrypt the message using AES-GCM
     EVP_CIPHER_CTX* ctx = EVP_CIPHER_CTX_new();
     EVP_DecryptInit_ex(ctx, EVP_aes_256_gcm(), NULL, NULL, NULL);
+    EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_GCM_SET_IVLEN, 12, NULL); // Set the IV length to 12 bytes (96 bits)
+    EVP_DecryptInit_ex(ctx, NULL, NULL, shared_secret_bytes, NULL); // Use shared secret as the key
     EVP_DecryptUpdate(ctx, *plaintext, (int*)plaintext_len, ciphertext, (int)ciphertext_len);
-    EVP_DecryptFinal_ex(ctx, *plaintext + *plaintext_len, (int*)plaintext_len);
+    EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_GCM_SET_TAG, 16, (ciphertext + ciphertext_len)); // Set the authentication tag
+    EVP_DecryptFinal_ex(ctx, *plaintext + *plaintext_len, (int*)&ciphertext_len); // Check if authentication tag is valid
     EVP_CIPHER_CTX_free(ctx);
 
     // Free the memory allocated
@@ -189,13 +195,24 @@ int main(int argc, char* argv[]) {
         printf("Shared secrets are not equal\n");
     }
 
+    // Print the shared secrets
+    printf("Shared secret: %s\n", shared_secret_str1);
+
     // Encrypt and decrypt a message using AES-GCM with the shared secret
     // Alice
     unsigned char* ciphertext;
     size_t ciphertext_len;
 
     char msg[2049] = "This is a test message";
+    printf("Original message: %s\n", msg);
     encrypt_msg(shared_secret_str1, msg, &ciphertext, &ciphertext_len);
+
+    // Print the ciphertext
+    printf("Ciphertext: ");
+    for (int i = 0; i < ciphertext_len; i++) {
+        printf("%02x", ciphertext[i]);
+    }
+    printf("\n");
 
     // Bob
     unsigned char* plaintext;
@@ -204,6 +221,13 @@ int main(int argc, char* argv[]) {
 
     // Null-terminate the plaintext array
     plaintext[plaintext_len] = '\0';
+
+    // Compare the original message and the decrypted message
+    if (strcmp(msg, (char*)plaintext) == 0) {
+        printf("Messages are equal\n");
+    } else {
+        printf("Messages are not equal\n");
+    }
 
     // Print the decrypted message
     printf("Decrypted message: %s\n", (char*)plaintext);
