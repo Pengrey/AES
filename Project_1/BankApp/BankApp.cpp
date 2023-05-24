@@ -153,6 +153,11 @@ static size_t get_file_size(const char *filename)
     }
     ifs.seekg(0, std::ios::end);
     size_t size = (size_t)ifs.tellg();
+    // seek back to start
+
+
+    ifs.seekg(0, std::ios::beg);
+
     ifs.close();
     return size;
 }
@@ -383,23 +388,17 @@ void do_validation(string client_id){
   uint8_t* pos_p = &pos;
   std::string filename = client_id + ".bin";
 
-  size_t sealed_size = get_file_size(filename.c_str());
-  printf("APP sealed_size: %d\n",sealed_size);
+  ostringstream ostrm;
+  ifstream fin(filename.c_str(), ios::binary);
+  ostrm<<fin.rdbuf();
 
-  uint8_t* sealed_card = (uint8_t*) malloc(sizeof(uint8_t) * sealed_size);
-
-
-  FILE *file_ptr;
-  file_ptr = fopen(filename.c_str(),"rb");  // r for read, b for binary
-  size_t val_bytes=fread(sealed_card,sizeof(uint8_t),sealed_size,file_ptr);
-  fclose(file_ptr);
-  printf("val_bytes: %d\n",val_bytes);
-  if (val_bytes!=sealed_size){
-    printf("Error reading file\n");
-    return;
-  }
-  printf("sealed_card: %s\n",*sealed_card);
-
+  std::cout << ostrm.str().size()<< std::endl;
+  
+  // str to uint8_t*
+  uint8_t* sealed_card = (uint8_t*) malloc(sizeof(uint8_t) * ostrm.str().size());
+  memcpy(sealed_card,ostrm.str().c_str(),ostrm.str().size());
+  size_t sealed_size = ostrm.str().size();
+  size_t* sealed_size_p = &sealed_size;
   
 
   int* is_valid;
@@ -415,7 +414,7 @@ void do_validation(string client_id){
   {
     print_error_message(ret,"be_validate");
   }   
-
+ 
    
 
   // demo unseal
