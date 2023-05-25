@@ -196,7 +196,8 @@ void append_to_card_log(uint8_t** card, size_t* card_size, char* message,int mes
 // First Card Seal
 // Plaintext in, Sealed out
 // Created Log
-void be_init_card(uint8_t *card,size_t card_size,uint8_t* sealed_card, size_t sealed_card_len)
+void be_init_card(uint8_t *card,size_t card_size,uint8_t* sealed_card, 
+                  size_t sealed_card_len, size_t* updated_len)
 {
   int ts;
   ocall_be_get_ts(&ts);
@@ -213,17 +214,26 @@ void be_init_card(uint8_t *card,size_t card_size,uint8_t* sealed_card, size_t se
   }
 
   printf("sealed_card_len: %d\n", sealed_card_len);
-  uint8_t *temp_sealed_buf = (uint8_t *)malloc(sealed_card_len);
+  memcpy(updated_len, &sealed_card_len, sizeof(sealed_card_len)); 
+
+  uint8_t *temp_sealed_buf = (uint8_t *)malloc(sealed_card_len*2);
   if(temp_sealed_buf == NULL){
     printf("out of memory\n");  
     return;
   }
 
-  sgx_status_t  err = sgx_seal_data(0 , NULL, card_size, card, sealed_card_len, (sgx_sealed_data_t *)temp_sealed_buf);
+  sgx_status_t  err = sgx_seal_data(0 , NULL, card_size, card, sealed_card_len, 
+                      (sgx_sealed_data_t *)temp_sealed_buf);
   if (err == SGX_SUCCESS)
   {
+     printf("-----sealed card---------\n");
+  for(int i = 0; i < sealed_card_len; i++){
+    printf("%02x",temp_sealed_buf[i]);
+  }
+  printf("\n--------aa------\n\n");
     // Copy the sealed data to outside buffer
-    memcpy(&sealed_card, temp_sealed_buf, sealed_card_len); //... DO **NOT** REMOVE THE & (again) (it's on the first arg)
+    printf("E: sealed_card_len right before memcpy: %d\n", sealed_card_len);
+    memcpy(sealed_card, temp_sealed_buf, sealed_card_len); //... DO **NOT** ADD THE & (again) (it's NOT on the first arg) STOP ÃDDING IT
   } 
   return;
 }
