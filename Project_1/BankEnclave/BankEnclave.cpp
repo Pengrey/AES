@@ -175,18 +175,24 @@ void be_get_seal_len(size_t* data_len, size_t* sealed_len) {
 void append_to_card_log(uint8_t** card, size_t* card_size, char* message,int message_size){
   int ts;
   ocall_be_get_ts(&ts);
-  std::string log_message = (std::to_string(ts) + std::string(" -- ")+std::string(message)+"\n") ;
+  printf("before\n");
+   printf("card_size: %d\n", *card_size);
+
+  std::string log_message = ("\n"+std::to_string(ts) + std::string(" -- ")+std::string(message)+"\n") ;
   int log_message_size = log_message.size();
 
   int new_card_size = *card_size + log_message_size;
   uint8_t* new_card = (uint8_t *)malloc(new_card_size);
-
   memcpy(new_card, *card, *card_size);
-  memcpy(new_card + *card_size, (uint8_t*)log_message.c_str(), log_message_size);
+
+  memcpy(new_card+*card_size, (uint8_t*)log_message.c_str(), log_message_size);
 
   *card_size = new_card_size;
 
   *card = new_card;
+  printf("after\n");
+  printf("card_size: %d\n", *card_size);
+
 }
 
 /*
@@ -203,36 +209,26 @@ void be_init_card(uint8_t *card,size_t card_size,uint8_t* sealed_card,
   ocall_be_get_ts(&ts);
   
  
-  printf("card size: %d\n", card_size);
   append_to_card_log(&card, &card_size, "Card created.", 12);
-  printf("after logging card size: %d\n", card_size);
-
- sealed_card_len = sgx_calc_sealed_data_size(0, card_size); // CHANGE FOR ADDING MAC TEXT
+  printf("after log card_size: %d\n", card_size);
+  sealed_card_len = sgx_calc_sealed_data_size(0, card_size); // CHANGE FOR ADDING MAC TEXT
   if (sealed_card_len == UINT32_MAX){
     printf("error unexpected\n");
    return;
   }
-
-  printf("sealed_card_len: %d\n", sealed_card_len);
+  // change card len to new one inc log
   memcpy(updated_len, &sealed_card_len, sizeof(sealed_card_len)); 
 
-  uint8_t *temp_sealed_buf = (uint8_t *)malloc(sealed_card_len*2);
+  uint8_t *temp_sealed_buf = (uint8_t *)malloc(sealed_card_len);
   if(temp_sealed_buf == NULL){
     printf("out of memory\n");  
     return;
   }
-
   sgx_status_t  err = sgx_seal_data(0 , NULL, card_size, card, sealed_card_len, 
                       (sgx_sealed_data_t *)temp_sealed_buf);
   if (err == SGX_SUCCESS)
-  {
-     printf("-----sealed card---------\n");
-  for(int i = 0; i < sealed_card_len; i++){
-    printf("%02x",temp_sealed_buf[i]);
-  }
-  printf("\n--------aa------\n\n");
+  {  
     // Copy the sealed data to outside buffer
-    printf("E: sealed_card_len right before memcpy: %d\n", sealed_card_len);
     memcpy(sealed_card, temp_sealed_buf, sealed_card_len); //... DO **NOT** ADD THE & (again) (it's NOT on the first arg) STOP ÃDDING IT
   } 
   return;
@@ -266,10 +262,14 @@ void be_validate( uint8_t* sealed_card, size_t sealed_size, uint8_t* client_id, 
   char* response_p = &response;
 
   char res = ocall_be_get_response(response_p, pos);
-
-  printf("sealed size %d\n",sealed_size);
-  printf("sealed card %s\n",sealed_card);
-  uint32_t card_size = sgx_get_encrypt_txt_len((const sgx_sealed_data_t *)sealed_card);
+  sgx_sealed_data_t* test=(sgx_sealed_data_t *)sealed_card;
+  printf("sealed size: %d\n",sealed_size);
+    printf("-----sealed buf---------\n");
+  for(int i=0;i<sealed_size/8;i++){
+    printf("%02x",test[i]);
+  }
+  printf("\n--------------\n\n"); 
+  uint32_t card_size = sgx_get_encrypt_txt_len((sgx_sealed_data_t *)sealed_card);
   printf("E: card_size: %d\n", card_size);
 
   uint8_t* plaintext_card = unseal_card(sealed_card, sealed_size);

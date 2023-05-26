@@ -361,11 +361,9 @@ int init_client(std::string client_id){
         sgx_destroy_enclave(global_eid1);
         return false;
     }
-
   sealed_len=sealed_len*2;
   // allocate mem in sealed card with sealed_len size
   uint8_t *temp_sealed_buf = (uint8_t *)malloc(sealed_len);
-  printf("sealed_len alocated: %d\n",sealed_len);
     if(temp_sealed_buf == NULL)
     {
         std::cout << "Out of memory" << std::endl;
@@ -379,20 +377,12 @@ int init_client(std::string client_id){
     print_error_message(ret,"be_init_card");
     return 1;
   }  
-  printf("AAAAAAA sealed_len: %d\n",*sealed_len_p);
 
-  printf("sealed_len after: %d\n",sealed_len);
 
-  // print bytes of sealed card
-  printf("-----sealed card---------\n");
-  for(int i = 0; i < sealed_len; i++){
-    printf("%02x",temp_sealed_buf[i]);
-  }
-  printf("\n--------------\n\n");
   FILE *file_ptr;
   std::string filename = client_id + ".bin";
   file_ptr = fopen(filename.c_str(),"wb");  // r for read, b for binary
-  fwrite(temp_sealed_buf,sizeof(temp_sealed_buf),sealed_len,file_ptr);
+  fwrite(temp_sealed_buf,1,sealed_len,file_ptr);
   fclose(file_ptr);
   
   return 0;
@@ -412,33 +402,39 @@ void do_validation(string client_id){
   FILE *file_ptr;
   std::string filename = client_id + ".bin";
 
-  file_ptr = fopen(filename.c_str(),"rb");  // r for read, b for binary
+  file_ptr = fopen(filename.c_str(),"rb");  
   fseek(file_ptr, 0, SEEK_END);
   long file_size = ftell(file_ptr);
-  rewind(file_ptr);
-
-  uint8_t *temp_buf = (uint8_t *)malloc(file_size);
-  fread(temp_buf,sizeof(uint8_t),(file_size/sizeof(uint8_t)),file_ptr);
+  fseek(file_ptr, 0, SEEK_SET);
+  printf("file_size: %ld\n",file_size);
+  uint8_t* temp_buf = (uint8_t*) malloc(file_size);
+  fread(temp_buf, 1, file_size, file_ptr);
   fclose(file_ptr);
 
-  printf("file_size: %ld\n",file_size);
-  // print addr of temp_buf
-  printf("temp_buf: %p\n",&temp_buf);
-  printf("temp_buf: %p\n",&temp_buf[0]);
-  printf("temp_buf: %s\n",temp_buf[0]);
-  printf("temp_buf: %p\n",&temp_buf[1]);
-  printf("temp_buf: %s\n",temp_buf[1]);
+    printf("-----sealed buf weeeeeeeeeee---------\n");
 
+  for(int i=0;i<file_size/8;i++){
+    printf("%02x",temp_buf[i]);
+  }
 
+  printf("\n--------------\n\n");  
 
   
-  uint8_t* sealed_card = (uint8_t*) malloc(ostrm.str().size());
+  uint8_t* sealed_card = temp_buf;
+  size_t sealed_size = file_size;
+  /* 
   memcpy(sealed_card,ostrm.str().c_str(),ostrm.str().size());
-
+   printf("-----sealed buf---------\n");
+  for(int i=0;i<file_size/8;i++){
+    printf("%02x",temp_buf[i]);
+  }
+  printf("\n--------------\n\n"); 
   size_t sealed_size = ostrm.str().size()/sizeof(uint8_t);
+  */
+
   size_t* sealed_size_p = &sealed_size;
   
-
+  printf("sealed size: %d\n",sealed_size);
   int* is_valid;
 
   if((ret = be_validate(global_eid1,  
