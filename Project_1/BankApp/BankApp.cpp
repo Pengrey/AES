@@ -437,12 +437,18 @@ void do_validation(string client_id){
   printf("sealed size: %d\n",sealed_size);
   int* is_valid;
 
+  int after_log_len = sealed_size*2;
+  uint8_t *after_log = (uint8_t *)malloc(after_log_len);
+  size_t* after_log_len_p = (size_t*)&after_log_len;
   if((ret = be_validate(global_eid1,  
     sealed_card, 
     sealed_size,
     (uint8_t*) client_id.c_str(),
     (size_t)client_id.length(),
-    is_valid
+    is_valid,
+    after_log,
+    after_log_len,
+    after_log_len_p
     )) != SGX_SUCCESS)
   {
     print_error_message(ret,"be_validate");
