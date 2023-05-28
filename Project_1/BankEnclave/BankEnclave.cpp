@@ -78,7 +78,6 @@ uint8_t *unseal_card(uint8_t *sealed_card, size_t sealed_size, uint8_t *client_i
     free(plaintext_card);
     return (uint8_t *)"";
   }
-  printf("mac text: %s\n", mac_text);
   if (client_id_len != mac_text_len)
   {
     printf("Unseal failed - mismatched client ID.\n");
@@ -100,12 +99,9 @@ uint8_t *unseal_card(uint8_t *sealed_card, size_t sealed_size, uint8_t *client_i
       i++;
     }
     int j = 0;
-    printf("mac_text_len: %d\n", mac_text_len);
     i=i-1;
     while (plaintext_card[i] != (uint8_t)'\n')
     {
-      printf("plaintext_card[i]: %c\n", plaintext_card[i]);
-      printf("client_id[j]: %c\n", client_id[j]);
       j++;
 
       /* if (plaintext_card[i] != mac_text[j])
@@ -133,7 +129,6 @@ uint8_t *unseal_card(uint8_t *sealed_card, size_t sealed_size, uint8_t *client_i
  */
 void be_get_seal_len(size_t *data_len, size_t *sealed_len, int client_id_len)
 {
-  printf("CLIENT ID LEN: %d\n", client_id_len);
   *sealed_len = sgx_calc_sealed_data_size(client_id_len, *data_len);
 }
 

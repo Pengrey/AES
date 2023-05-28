@@ -480,7 +480,7 @@ int menu(string client_id){
         cout << "Invalid option. Try again: ";
         cin >> option;
     }
-
+    cout << "\n" << endl;
     // For each option, call the corresponding function
     switch (option) {
         case 1:
