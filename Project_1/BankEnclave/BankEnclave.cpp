@@ -100,21 +100,20 @@ uint8_t *unseal_card(uint8_t *sealed_card, size_t sealed_size, uint8_t *client_i
       i++;
     }
     int j = 0;
-    if (mac_text_len!=1){
-      i = i-1;
-    }
+    printf("mac_text_len: %d\n", mac_text_len);
+    i=i-1;
     while (plaintext_card[i] != (uint8_t)'\n')
     {
-      j++;
       printf("plaintext_card[i]: %c\n", plaintext_card[i]);
-      printf("mac_text[j]: %c\n", mac_text[j]);
       printf("client_id[j]: %c\n", client_id[j]);
-      if (plaintext_card[i] != mac_text[j])
+      j++;
+
+      /* if (plaintext_card[i] != mac_text[j])
       {
         printf("Unseal failed - mismatched client ID.\n");
         free(plaintext_card);
         return (uint8_t *)"";
-      }
+      } */
       if (plaintext_card[i] != client_id[j])
       {
         printf("Unseal failed - mismatched client ID.\n");
