@@ -496,12 +496,11 @@ int menu(string client_id){
             cout << "Validating card..." << endl;
 
             if (do_validation(client_id)){
-              cout << "Correct!" << endl;
+              cout << "Correct!\n" << endl;
             }
             else{
-              cout << "Incorrect!" << endl;
+              cout << "Incorrect!\n" << endl;
             }
-            printf("Validation done.\n");
             break;
         case 4:
         
