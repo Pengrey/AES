@@ -300,7 +300,7 @@ string parse_card(string client_id) {
         result += line;
     }
     fin.close();
-    return result+"\n"+client_id;
+    return result+"\n"+client_id+"\n";
 }
 
 
@@ -392,7 +392,7 @@ int init_client(std::string client_id){
 
 
 //TODO
-void do_validation(string client_id){
+int do_validation(string client_id){
   sgx_status_t ret;
   uint8_t pos = NULL;
   uint8_t* pos_p = &pos;
@@ -454,7 +454,16 @@ void do_validation(string client_id){
     print_error_message(ret,"be_validate");
   }   
  
-   
+  string filename2 = client_id + ".bin";
+  file_ptr = fopen(filename2.c_str(),"wb");  // r for read, b for binary
+  rewind(file_ptr);
+    printf("yay\n");
+
+  fwrite(after_log,1,*after_log_len_p,file_ptr);
+    printf("yay\n");
+
+  fclose(file_ptr);
+  printf("yay\n");
 
   // demo unseal
 /* 
@@ -473,7 +482,7 @@ void do_validation(string client_id){
     print_error_message(ret,"unseal_card");
     return 1;
   }     */
-
+return is_valid;
 
 }
 
@@ -507,6 +516,7 @@ int menu(string client_id){
         case 3:
             cout << "Validating card..." << endl;
             do_validation(client_id);
+            printf("Validation done\n");
             break;
         case 4:
             cout << "Exiting..." << endl;

@@ -315,29 +315,35 @@ void be_validate( uint8_t* sealed_card, size_t sealed_size, uint8_t* client_id, 
 
   }
 
-  
-  size_t* sealed_card_len;
-  *sealed_card_len = sgx_calc_sealed_data_size(0, card_size); // CHANGE FOR ADDING MAC TEXT
-  if (*sealed_card_len == UINT32_MAX){
+  // Re-Seal the card
+  printf("card_size: %d\n", card_size);
+  uint32_t sealed_card_len;
+  sealed_card_len = sgx_calc_sealed_data_size(0, card_size); // CHANGE FOR ADDING MAC TEXT
+  if (sealed_card_len == UINT32_MAX){
     printf("error unexpected\n");
    return;
   }
-
+  printf("sealed_card_len: %d\n", sealed_card_len);
   // change card len to new one inc log
-  memcpy(updated_len, &sealed_card_len, sizeof(*sealed_card_len)); 
-
-  uint8_t *temp_sealed_buf = (uint8_t *)malloc(*sealed_card_len);
+  memcpy(updated_len, &sealed_card_len, sizeof(sealed_card_len)); 
+  printf("_-----Got here\n");
+  uint8_t *temp_sealed_buf = (uint8_t *)malloc(sealed_card_len);
   if(temp_sealed_buf == NULL){
     printf("out of memory\n");  
     return;
   }
 
-  sgx_status_t  err = sgx_seal_data(0 , NULL, card_size, plaintext_card, *sealed_card_len, 
+    printf("_-----and Got here\n");
+
+  sgx_status_t  err = sgx_seal_data(0 , NULL, card_size, plaintext_card, sealed_card_len, 
                       (sgx_sealed_data_t *)temp_sealed_buf);
   if (err == SGX_SUCCESS)
   {  
+    printf("_----- and and Got here\n");
+
     // Copy the sealed data to outside buffer
-    memcpy(sealed_card_out, temp_sealed_buf, *sealed_card_len); //... DO **NOT** ADD THE & (again) (it's NOT on the first arg) STOP ÃDDING IT
+    memcpy(sealed_card_out, temp_sealed_buf, sealed_card_len); //... DO **NOT** ADD THE & (again) (it's NOT on the first arg) STOP ÃDDING IT
+
   } 
   return;
 }
