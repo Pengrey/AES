@@ -143,24 +143,6 @@ static sgx_errlist_t sgx_errlist[] =
 };
 
 
-static size_t get_file_size(const char *filename)
-{
-    std::ifstream ifs(filename, std::ios::in | std::ios::binary);
-    if (!ifs.good())
-    {
-        std::cout << "Failed to open the file \"" << filename << "\"" << std::endl;
-        return -1;
-    }
-    ifs.seekg(0, std::ios::end);
-    size_t size = (size_t)ifs.tellg();
-    // seek back to start
-
-
-    ifs.seekg(0, std::ios::beg);
-
-    ifs.close();
-    return size;
-}
 
 void print_error_message(sgx_status_t ret,const char *sgx_function_name)
 {
@@ -207,7 +189,7 @@ void ocall_e1_print_string(const char *str)
 
 char ocall_be_get_response(int position)
 {
-  printf("App: position %d\n",position);
+  //printf("App: position %d\n",position);
   int row = position / (SIZE_CARD * 3);
 
  string row_label = "";
@@ -224,7 +206,6 @@ char ocall_be_get_response(int position)
   cout << "Write the number for the position " << row_label << "-" << col + 1 << "-" << letter + 1 << ": ";
   char number;
   cin >> number; // will only get one char, as intended!
-  printf("selected number : %c\n",number);
 
   return number; 
 }
@@ -400,52 +381,50 @@ int do_validation(string client_id){
 
   // -- Read sealed card from bin file into buffer
   FILE *file_ptr;
-  std::string filename = client_id + ".bin";
+  // concat client_id with .bin to get filename using strcat
+  char filename[client_id.length()+5];
+  strcpy(filename,client_id.c_str());
+  strcat(filename,".bin");
 
-  file_ptr = fopen(filename.c_str(),"rb");  
+
+
+
+
+
+  file_ptr = fopen(filename,"rb");  
   fseek(file_ptr, 0, SEEK_END);
   long file_size = ftell(file_ptr);
   fseek(file_ptr, 0, SEEK_SET);
   printf("file_size: %ld\n",file_size);
-  uint8_t* temp_buf = (uint8_t*) malloc(file_size);
+  uint8_t* temp_buf = (uint8_t*) calloc(file_size,sizeof(uint8_t));
   fread(temp_buf, 1, file_size, file_ptr);
   fclose(file_ptr);
-
-    printf("-----sealed buf weeeeeeeeeee---------\n");
-
-  for(int i=0;i<file_size/8;i++){
-    printf("%02x",temp_buf[i]);
-  }
-
-  printf("\n--------------\n\n");  
 
   
   uint8_t* sealed_card = temp_buf;
   size_t sealed_size = file_size;
-  /* 
-  memcpy(sealed_card,ostrm.str().c_str(),ostrm.str().size());
-   printf("-----sealed buf---------\n");
-  for(int i=0;i<file_size/8;i++){
-    printf("%02x",temp_buf[i]);
-  }
-  printf("\n--------------\n\n"); 
-  size_t sealed_size = ostrm.str().size()/sizeof(uint8_t);
-  */
-
   size_t* sealed_size_p = &sealed_size;
-  
-  printf("sealed size: %d\n",sealed_size);
-  int* is_valid;
 
-  int after_log_len = sealed_size*2;
-  uint8_t *after_log = (uint8_t *)malloc(after_log_len);
+  printf("sealed size: %d\n",sealed_size);
+  printf("filename: %s\n",filename);
+
+  int is_valid;
+  is_valid=0;
+  int* is_valid_p = &is_valid;
+  int after_log_len = sealed_size*5;
+  printf("after_log_len: %d\n",after_log_len);
+  printf("filename: %s\n",filename);
+
+  uint8_t *after_log = (uint8_t *)calloc(after_log_len,sizeof(uint8_t));
   size_t* after_log_len_p = (size_t*)&after_log_len;
+  printf("filename: %s\n",filename);
+
   if((ret = be_validate(global_eid1,  
-    sealed_card, 
+    temp_buf, 
     sealed_size,
     (uint8_t*) client_id.c_str(),
     (size_t)client_id.length(),
-    is_valid,
+    is_valid_p,
     after_log,
     after_log_len,
     after_log_len_p
@@ -453,9 +432,19 @@ int do_validation(string client_id){
   {
     print_error_message(ret,"be_validate");
   }   
- 
-  string filename2 = client_id + ".bin";
-  file_ptr = fopen(filename2.c_str(),"wb");  // r for read, b for binary
+  printf("after validate\n");
+  printf("filename: %s\n",filename);
+  printf("sealed_card: %s\n",temp_buf);
+  printf("sealed_size: %d\n",sealed_size);
+  printf("client_id: %s\n",client_id.c_str());
+  printf("client_id_len: %d\n",client_id.length());
+  printf("is valid? %d\n",is_valid);
+  printf("after_log: %s\n",after_log);
+  printf("after_log_len: %d\n",*after_log_len_p);
+  printf("after_log_len: %d\n",after_log_len);
+
+ printf("is valid? %d\n",is_valid);
+  file_ptr = fopen(filename,"wb");  // r for read, b for binary
   rewind(file_ptr);
     printf("yay\n");
 
@@ -464,7 +453,6 @@ int do_validation(string client_id){
 
   fclose(file_ptr);
   printf("yay\n");
-
   // demo unseal
 /* 
   size_t sealed_size = get_file_size("test.bin");
