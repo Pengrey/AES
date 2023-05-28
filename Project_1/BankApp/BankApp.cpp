@@ -291,7 +291,30 @@ string init_card(string client_id){
 }
 
 
+void get_card_logs(string client_id){
+  
+  FILE *file_ptr;
+  char filename[client_id.length()+5];
+  strcpy(filename,client_id.c_str());
+  strcat(filename,".bin");
 
+  file_ptr = fopen(filename,"rb");  
+  fseek(file_ptr, 0, SEEK_END);
+  long file_size = ftell(file_ptr);
+  fseek(file_ptr, 0, SEEK_SET);
+  uint8_t* temp_buf = (uint8_t*) calloc(file_size,sizeof(uint8_t));
+  fread(temp_buf, 1, file_size, file_ptr);
+  fclose(file_ptr);
+
+  sgx_status_t ret;
+
+  uint8_t* client_id_bytes = (uint8_t*) calloc(client_id.length(),sizeof(uint8_t));
+  if((ret = be_get_logs(global_eid1,temp_buf, file_size, client_id_bytes,(size_t)client_id.length())) != SGX_SUCCESS)
+  {
+    print_error_message(ret,"be_get_logs");
+    return;
+  }  
+}
 
 
 // Creates a card for the client, sends it to the enclave to be sealed
@@ -334,7 +357,7 @@ int init_client(std::string client_id){
   size_t* card_size_p = &card_size;
 
 
-  if((ret = be_get_seal_len(global_eid1,card_size_p, sealed_len_p)) != SGX_SUCCESS)
+  if((ret = be_get_seal_len(global_eid1,card_size_p, sealed_len_p,client_id.length())) != SGX_SUCCESS)
   {
     print_error_message(ret,"be_get_seal_len");
     return 1;
@@ -433,6 +456,9 @@ int do_validation(string client_id){
   rewind(file_ptr);
   fwrite(after_log,1,*after_log_len_p,file_ptr);
   fclose(file_ptr);
+
+  free(temp_buf);
+  
 return is_valid;
 
 }
@@ -444,12 +470,13 @@ int menu(string client_id){
     cout << "1. Generate new card" << endl;
     cout << "2. Parse card" << endl;
     cout << "3. Validate card" << endl;
-    cout << "4. Exit" << endl;
+    cout << "4. Get Card Logs" << endl;
+    cout << "5. Exit" << endl;
     cout << "Option: ";
     cin >> option;
 
     // Check if the option is valid
-    while (option < 1 || option > 4) {
+    while (option < 1 || option > 5) {
         cout << "Invalid option. Try again: ";
         cin >> option;
     }
@@ -467,6 +494,7 @@ int menu(string client_id){
             break;
         case 3:
             cout << "Validating card..." << endl;
+
             if (do_validation(client_id)){
               cout << "Correct!" << endl;
             }
@@ -476,6 +504,10 @@ int menu(string client_id){
             printf("Validation done.\n");
             break;
         case 4:
+        
+            get_card_logs(client_id);
+            break;
+        case 5:
             cout << "Exiting..." << endl;
             return 0;
     }
