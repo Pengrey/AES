@@ -85,6 +85,17 @@ uint8_t* unseal_card(uint8_t *sealed_card, size_t sealed_size, uint8_t *client_i
     free(plaintext_card);
     return (uint8_t *)"";
   }
+  else
+    for(int i = 0; i < client_id_len; i++)
+    {
+     if (client_id[i] != mac_text[i])
+     {
+       printf("Unseal failed - mismatched client ID.\n");
+       free(plaintext_card);
+       return (uint8_t *)"";
+     }
+    }
+  
   return plaintext_card;
 }
 
