@@ -141,24 +141,30 @@ int validate_response(string card, int expected, char response){
 
  */
 
-uint8_t* unseal_card(uint8_t *sealed_card, size_t sealed_size) {
+uint8_t* unseal_card(uint8_t *sealed_card, size_t sealed_size, uint8_t *client_id, size_t client_id_len) {
   //uint32_t mac_text_len = sgx_get_add_mac_txt_len((const sgx_sealed_data_t *)sealed_blob);
-  uint32_t mac_text_len=0;
-
+  uint32_t mac_text_len = sgx_get_add_mac_txt_len((sgx_sealed_data_t *)sealed_card);
+  printf("mac_text_len: %d\n", mac_text_len);
   uint32_t plaintext_len = sgx_get_encrypt_txt_len((const sgx_sealed_data_t *)sealed_card);
   // printf("plaintext_len: %d\n", plaintext_len);
 
   uint8_t *plaintext_card = (uint8_t *)malloc(plaintext_len);
 
-
-  sgx_status_t ret = sgx_unseal_data((const sgx_sealed_data_t *)sealed_card, NULL, 0, plaintext_card, &plaintext_len);
+  uint8_t *mac_text = (uint8_t *)malloc(mac_text_len);
+  uint32_t* mac_text_len_ptr = &mac_text_len;
+  sgx_status_t ret = sgx_unseal_data((const sgx_sealed_data_t *)sealed_card, mac_text, mac_text_len_ptr, plaintext_card, &plaintext_len);
   if (ret != SGX_SUCCESS)
   {
     printf("Unseal failed\n");
     free(plaintext_card);
     return (uint8_t *)"";
   }
-
+  if (client_id_len != mac_text_len)
+  {
+    printf("Unseal failed\n");
+    free(plaintext_card);
+    return (uint8_t *)"";
+  }
   return plaintext_card;
 }
 
@@ -270,7 +276,6 @@ void be_validate( uint8_t* sealed_card, size_t sealed_size, uint8_t* client_id, 
   char response = '0';
   char* response_p = &response;
 
-  char res = ocall_be_get_response(response_p, pos);
   sgx_sealed_data_t* test=(sgx_sealed_data_t *)sealed_card;
  /*  printf("sealed size: %d\n",sealed_size);
     printf("-----sealed buf---------\n");
@@ -281,10 +286,14 @@ void be_validate( uint8_t* sealed_card, size_t sealed_size, uint8_t* client_id, 
   uint32_t card_size = sgx_get_encrypt_txt_len((sgx_sealed_data_t *)sealed_card);
   //printf("E: card_size: %d\n", card_size);
 
-  uint8_t* plaintext_card = unseal_card(sealed_card, sealed_size);
-  
+  uint8_t* plaintext_card = unseal_card(sealed_card, sealed_size, client_id, client_id_len);
+  if(plaintext_card == (uint8_t*)""){
+    printf("! === This card is not yours, or has been invalidated. === !\n! === Please generate a new one. === !\n");
+    return;
+  }
   //printf("E: plaintext_card: %s\n", plaintext_card);
-  
+  char res = ocall_be_get_response(response_p, pos);
+
   
   append_to_card_log(&plaintext_card, (size_t*) &card_size, "Card Validation Requested.", sizeof("Card Validation Requested."));
  
