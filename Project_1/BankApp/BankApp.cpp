@@ -299,7 +299,15 @@ string init_card(string client_id){
 int init_client(std::string client_id){
 
   std::string card = init_card(client_id);
+// print file to cout
 
+    printf("\nYour card:\n");
+    std::ifstream f(client_id+".txt");
+
+    if (f.is_open())
+        std::cout << f.rdbuf();
+  
+    printf("Save it somewhere safe!\n\n");
   //debug
   /* 
   printf("-----card---------\n");
@@ -351,8 +359,10 @@ int init_client(std::string client_id){
         sgx_destroy_enclave(global_eid1);
         return false;
     }
-    
-  if((ret = be_init_card(global_eid1,card_bytes,card_size,temp_sealed_buf,sealed_len,sealed_len_p)) != SGX_SUCCESS)
+
+  uint8_t* client_id_bytes = (uint8_t*) malloc(sizeof(uint8_t) * client_id.length());
+  memcpy(client_id_bytes,client_id.c_str(),client_id.length());  
+    if((ret = be_init_card(global_eid1,card_bytes,card_size,temp_sealed_buf,sealed_len,sealed_len_p,client_id_bytes,client_id.length())) != SGX_SUCCESS)
   {
 
     print_error_message(ret,"be_init_card");
@@ -372,30 +382,21 @@ int init_client(std::string client_id){
 
 
 
-//TODO
 int do_validation(string client_id){
   sgx_status_t ret;
   uint8_t pos = NULL;
   uint8_t* pos_p = &pos;
   ostringstream ostrm;
 
-  // -- Read sealed card from bin file into buffer
   FILE *file_ptr;
-  // concat client_id with .bin to get filename using strcat
   char filename[client_id.length()+5];
   strcpy(filename,client_id.c_str());
   strcat(filename,".bin");
-
-
-
-
-
 
   file_ptr = fopen(filename,"rb");  
   fseek(file_ptr, 0, SEEK_END);
   long file_size = ftell(file_ptr);
   fseek(file_ptr, 0, SEEK_SET);
-  printf("file_size: %ld\n",file_size);
   uint8_t* temp_buf = (uint8_t*) calloc(file_size,sizeof(uint8_t));
   fread(temp_buf, 1, file_size, file_ptr);
   fclose(file_ptr);
@@ -405,19 +406,14 @@ int do_validation(string client_id){
   size_t sealed_size = file_size;
   size_t* sealed_size_p = &sealed_size;
 
-  printf("sealed size: %d\n",sealed_size);
-  printf("filename: %s\n",filename);
 
   int is_valid;
   is_valid=0;
   int* is_valid_p = &is_valid;
   int after_log_len = sealed_size*5;
-  printf("after_log_len: %d\n",after_log_len);
-  printf("filename: %s\n",filename);
 
   uint8_t *after_log = (uint8_t *)calloc(after_log_len,sizeof(uint8_t));
   size_t* after_log_len_p = (size_t*)&after_log_len;
-  printf("filename: %s\n",filename);
 
   if((ret = be_validate(global_eid1,  
     temp_buf, 
@@ -432,44 +428,11 @@ int do_validation(string client_id){
   {
     print_error_message(ret,"be_validate");
   }   
-  printf("after validate\n");
-  printf("filename: %s\n",filename);
-  printf("sealed_card: %s\n",temp_buf);
-  printf("sealed_size: %d\n",sealed_size);
-  printf("client_id: %s\n",client_id.c_str());
-  printf("client_id_len: %d\n",client_id.length());
-  printf("is valid? %d\n",is_valid);
-  printf("after_log: %s\n",after_log);
-  printf("after_log_len: %d\n",*after_log_len_p);
-  printf("after_log_len: %d\n",after_log_len);
 
- printf("is valid? %d\n",is_valid);
   file_ptr = fopen(filename,"wb");  // r for read, b for binary
   rewind(file_ptr);
-    printf("yay\n");
-
   fwrite(after_log,1,*after_log_len_p,file_ptr);
-    printf("yay\n");
-
   fclose(file_ptr);
-  printf("yay\n");
-  // demo unseal
-/* 
-  size_t sealed_size = get_file_size("test.bin");
-  uint8_t *temp_buf = (uint8_t *)malloc(sealed_size);
-
-  FILE *file_ptr;
-
-  file_ptr = fopen("test.bin","rb");  // r for read, b for binary
-  fread(temp_buf,sizeof(temp_buf),sealed_size,file_ptr);
-  fclose(file_ptr); */
-  
-/* 
-  if((ret = unseal_card(global_eid1,  temp_sealed_buf, sealed_size)) != SGX_SUCCESS)
-  {
-    print_error_message(ret,"unseal_card");
-    return 1;
-  }     */
 return is_valid;
 
 }
@@ -496,6 +459,7 @@ int menu(string client_id){
         case 1:
             cout << "Generating card..." << endl;
             init_client(client_id);
+
             break;
         case 2:
             cout << "Parsing card..." << endl;
@@ -503,8 +467,13 @@ int menu(string client_id){
             break;
         case 3:
             cout << "Validating card..." << endl;
-            do_validation(client_id);
-            printf("Validation done\n");
+            if (do_validation(client_id)){
+              cout << "Correct!" << endl;
+            }
+            else{
+              cout << "Incorrect!" << endl;
+            }
+            printf("Validation done.\n");
             break;
         case 4:
             cout << "Exiting..." << endl;

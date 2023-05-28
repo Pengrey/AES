@@ -211,7 +211,7 @@ void append_to_card_log(uint8_t** card, size_t* card_size, char* message,int mes
 // Plaintext in, Sealed out
 // Created Log
 void be_init_card(uint8_t *card,size_t card_size,uint8_t* sealed_card, 
-                  size_t sealed_card_len, size_t* updated_len)
+                  size_t sealed_card_len, size_t* updated_len, uint8_t* client_id, size_t client_id_len)
 {
   int ts;
   ocall_be_get_ts(&ts);
@@ -303,11 +303,11 @@ void be_validate( uint8_t* sealed_card, size_t sealed_size, uint8_t* client_id, 
       append_to_card_log(&plaintext_card, (size_t*)&card_size, "Failed...", sizeof("Failed..."));
 
   }
-
+  printf("======For debug/proof of work purposes======\nCurrent Card:\n");
   for(int i=0;i<card_size;i++){
     printf("%c",plaintext_card[i]);
   } 
-
+  printf("\n============================================\n");
   // Re-Seal the card
   //printf("card_size: %d\n", card_size);
   uint32_t sealed_card_len;
