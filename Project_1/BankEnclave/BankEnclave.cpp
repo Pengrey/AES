@@ -216,10 +216,10 @@ void be_init_card(uint8_t *card,size_t card_size,uint8_t* sealed_card,
   int ts;
   ocall_be_get_ts(&ts);
   
- 
+  uint32_t client_id_len_int = (uint32_t)client_id_len;
   append_to_card_log(&card, &card_size, "Card created.", 12);
  // printf("after log card_size: %d\n", card_size);
-  sealed_card_len = sgx_calc_sealed_data_size(0, card_size); // CHANGE FOR ADDING MAC TEXT
+  sealed_card_len = sgx_calc_sealed_data_size(client_id_len_int, card_size); // CHANGE FOR ADDING MAC TEXT
   if (sealed_card_len == UINT32_MAX){
     printf("error unexpected\n");
    return;
@@ -233,7 +233,7 @@ void be_init_card(uint8_t *card,size_t card_size,uint8_t* sealed_card,
     return;
   }
 
-  sgx_status_t  err = sgx_seal_data(0 , NULL, card_size, card, sealed_card_len, 
+  sgx_status_t  err = sgx_seal_data(client_id_len_int , client_id, card_size, card, sealed_card_len, 
                       (sgx_sealed_data_t *)temp_sealed_buf);
   if (err == SGX_SUCCESS)
   {  
